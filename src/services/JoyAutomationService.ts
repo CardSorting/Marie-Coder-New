@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { proposeReorganization, executeRestoration, synthesizeZoneManuals, scaffoldZoneAbstractions, sowFeature, proposeClustering, executeGenesisRitual, isProjectJoyful } from '../domain/joy/JoyTools';
-import { JoyService } from './JoyService';
-import { RunTelemetry } from '../domain/marie/MarieTypes';
+import { proposeReorganization, executeRestoration, synthesizeZoneManuals, scaffoldZoneAbstractions, sowFeature, proposeClustering, executeGenesisRitual, isProjectJoyful } from '../domain/joy/JoyTools.js';
+import { JoyService } from './JoyService.js';
+import { RunTelemetry } from '../domain/marie/MarieTypes.js';
 
 export class JoyAutomationService {
     private currentRun: RunTelemetry | undefined;

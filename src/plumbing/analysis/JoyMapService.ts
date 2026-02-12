@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { checkCodeHealth } from './CodeHealthService';
+import { checkCodeHealth } from './CodeHealthService.js';
 
 export interface JoyMap {
     overallJoyScore: number;

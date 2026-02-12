@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
-import { getGratitudeMessage, getCelebrationMessage } from '../../prompts';
-import { detectMigrationNeeds } from '../../domain/joy/JoyTools';
+import { getGratitudeMessage, getCelebrationMessage } from '../../prompts.js';
+import { detectMigrationNeeds } from '../../domain/joy/JoyTools.js';
 
 export interface HealthReport {
     path: string;

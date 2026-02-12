@@ -1,4 +1,4 @@
-import { HiveMemory, CouncilVote, ToolExecution, Blackboard, BlackboardRoutine, CouncilStrategy } from './MarieCouncilTypes';
+import { HiveMemory, CouncilVote, ToolExecution, Blackboard, BlackboardRoutine, CouncilStrategy } from './MarieCouncilTypes.js';
 import { MarieMemoryStore } from "../../services/MarieMemoryStore.js";
 
 export class CouncilState {

@@ -1,5 +1,5 @@
-import { CouncilState } from './CouncilState';
-import { CouncilStrategy, ErrorCategory } from './MarieCouncilTypes';
+import { CouncilState } from './CouncilState.js';
+import { CouncilStrategy, ErrorCategory } from './MarieCouncilTypes.js';
 
 export class CouncilBrain {
     constructor(private state: CouncilState) { }

@@ -1,5 +1,5 @@
-import { CouncilState as StateManager } from './CouncilState';
-import { CouncilVote, CouncilStrategy, CouncilMood } from './MarieCouncilTypes';
+import { CouncilState as StateManager } from './CouncilState.js';
+import { CouncilVote, CouncilStrategy, CouncilMood } from './MarieCouncilTypes.js';
 
 export class CouncilConsensus {
     // BALANCED SUPREMACY: YOLO has highest weight but council still matters

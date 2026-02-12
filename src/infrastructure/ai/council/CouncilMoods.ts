@@ -1,5 +1,5 @@
-import { CouncilState as StateManager } from './CouncilState';
-import { CouncilMood } from './MarieCouncilTypes';
+import { CouncilState as StateManager } from './CouncilState.js';
+import { CouncilMood } from './MarieCouncilTypes.js';
 
 export class CouncilMoods {
     public currentMood: CouncilMood = 'AGGRESSIVE';

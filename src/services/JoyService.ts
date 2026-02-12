@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { checkCodeHealth, HealthReport } from '../plumbing/analysis/CodeHealthService';
+import { checkCodeHealth, HealthReport } from '../plumbing/analysis/CodeHealthService.js';
 
-import { JoyLogService } from './JoyLogService';
-import { proposeClustering, isProjectJoyful } from '../domain/joy/JoyTools';
+import { JoyLogService } from './JoyLogService.js';
+import { proposeClustering, isProjectJoyful } from '../domain/joy/JoyTools.js';
 
 export class JoyService implements vscode.Disposable {
     private statusBarItem: vscode.StatusBarItem;

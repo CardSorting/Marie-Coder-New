@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { PureStreamParser, PartialToolInput } from '../infrastructure/tools/PureStreamParser';
-import { MarieSCMProvider } from './MarieSCMProvider';
-import { StringUtils } from '../plumbing/utils/StringUtils';
+import { PureStreamParser, PartialToolInput } from '../infrastructure/tools/PureStreamParser.js';
+import { MarieSCMProvider } from './MarieSCMProvider.js';
+import { StringUtils } from '../plumbing/utils/StringUtils.js';
 
 /**
  * Provides inline 'Ghost Text' previews of AI edits and coordinates with SCM for gutter markers.

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TerminalService } from '../terminal/TerminalService';
+import { TerminalService } from '../terminal/TerminalService.js';
 
 export interface TriageReport {
     success: boolean;
