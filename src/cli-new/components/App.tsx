@@ -10,7 +10,7 @@ import { useSessions } from '../hooks/useSessions.js';
 import { useGit } from '../hooks/useGit.js';
 import { ViewMode } from '../types/cli.js';
 import { marieTheme } from '../styles/theme.js';
-import { ConfigService } from '../../infrastructure/config/ConfigService.js';
+import { Storage } from '../../cli/storage.js';
 
 interface AppProps {
     workingDir: string;
@@ -118,7 +118,7 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
     });
 
     // Get current model
-    const model = ConfigService.getModel() || 'claude-3-5-sonnet-20241022';
+    const model = Storage.getConfig().model || 'claude-3-5-sonnet-20241022';
 
     if (viewMode === 'sessions') {
         return (

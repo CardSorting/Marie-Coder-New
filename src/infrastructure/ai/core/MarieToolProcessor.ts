@@ -1,5 +1,22 @@
-import * as vscode from "vscode";
+import type * as vscodeTypes from "vscode";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
+
+// Lazy-load vscode to avoid CLI errors
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let vscodeModule: typeof vscodeTypes | null = null;
+let hasAttemptedVscodeLoad = false;
+function getVscode(): typeof vscodeTypes | null {
+    if (!hasAttemptedVscodeLoad) {
+        hasAttemptedVscodeLoad = true;
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            vscodeModule = require("vscode") as typeof vscodeTypes;
+        } catch {
+            vscodeModule = null;
+        }
+    }
+    return vscodeModule;
+}
 import { MarieProgressTracker } from "./MarieProgressTracker.js";
 import { RitualService } from "../../../domain/joy/RitualService.js";
 import { getStringArg } from "../../tools/ToolUtils.js";
@@ -309,7 +326,8 @@ export class MarieToolProcessor {
     }
 
     private validatePath(p: string): string | null {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const vscode = getVscode();
+        const workspaceFolders = vscode?.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) return null; // No workspace, no boundary to enforce
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath;

@@ -1,95 +1,189 @@
-import * as vscode from 'vscode';
+// ConfigService - Environment-aware configuration
+// Works in both VSCode extension and CLI environments
+
+import type * as vscodeTypes from 'vscode';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let vscodeModule: typeof vscodeTypes | null = null;
+let hasAttemptedVscodeLoad = false;
+
+function getVscode(): typeof vscodeTypes | null {
+    if (!hasAttemptedVscodeLoad) {
+        hasAttemptedVscodeLoad = true;
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            vscodeModule = require('vscode') as typeof vscodeTypes;
+        } catch {
+            // VSCode not available - we're in CLI mode
+            vscodeModule = null;
+        }
+    }
+    return vscodeModule;
+}
+
+// CLI config cache (loaded from Storage)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cliConfig: any = null;
+
+function getCliConfig(): Record<string, unknown> {
+    if (!cliConfig) {
+        try {
+            // Dynamic require to avoid issues in VSCode environment
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { Storage } = require('../../cli/storage.js');
+            cliConfig = Storage.getConfig();
+        } catch {
+            cliConfig = {};
+        }
+    }
+    return cliConfig || {};
+}
+
+interface ConfigProvider {
+    get<T>(key: string, defaultValue?: T): T | undefined;
+}
 
 export class ConfigService {
     /** Cached excluded files list — invalidated on config change */
     private static _excludedFilesCache: string[] | null = null;
 
-    private static _configChangeListener: vscode.Disposable | null = null;
-
-    private static getConfig() {
-        return vscode.workspace.getConfiguration("marie");
+    private static getVscodeConfig(): ConfigProvider | null {
+        const vscode = getVscode();
+        if (!vscode) return null;
+        return vscode.workspace.getConfiguration("marie") as ConfigProvider;
     }
 
-    private static ensureConfigListener(): void {
-        if (!this._configChangeListener) {
-            this._configChangeListener = vscode.workspace.onDidChangeConfiguration(e => {
-                if (e.affectsConfiguration("files.exclude") || e.affectsConfiguration("marie")) {
-                    this._excludedFilesCache = null;
-                }
-            });
-        }
+    private static isVscode(): boolean {
+        return getVscode() !== null;
     }
 
     static getApiKey(): string | undefined {
-        return this.getConfig().get<string>("apiKey");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<string>("apiKey");
+        }
+        return process.env.ANTHROPIC_API_KEY;
     }
 
     static getOpenRouterApiKey(): string | undefined {
-        return this.getConfig().get<string>("openrouterApiKey");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<string>("openrouterApiKey");
+        }
+        return process.env.OPENROUTER_API_KEY;
     }
 
     static getCerebrasApiKey(): string | undefined {
-        return this.getConfig().get<string>("cerebrasApiKey");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<string>("cerebrasApiKey");
+        }
+        return process.env.CEREBRAS_API_KEY;
     }
 
     static getAiProvider(): 'anthropic' | 'openrouter' | 'cerebras' {
-        return this.getConfig().get<'anthropic' | 'openrouter' | 'cerebras'>("aiProvider", "anthropic");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<'anthropic' | 'openrouter' | 'cerebras'>("aiProvider", "anthropic");
+        }
+        const config = getCliConfig();
+        return (config.aiProvider as 'anthropic' | 'openrouter' | 'cerebras') || "anthropic";
     }
 
     static getModel(): string {
-        return this.getConfig().get<string>("model", "claude-3-5-sonnet-20241022");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<string>("model", "claude-3-5-sonnet-20241022");
+        }
+        const config = getCliConfig();
+        return (config.model as string) || "claude-3-5-sonnet-20241022";
     }
 
     static getRequireApproval(): boolean {
-        return this.getConfig().get<boolean>("requireApproval", true);
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<boolean>("requireApproval", true);
+        }
+        const config = getCliConfig();
+        return config.requireApproval !== false;
     }
 
     static getMaxContextTokens(): number {
-        return this.getConfig().get<number>("maxContextTokens", 100000);
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<number>("maxContextTokens", 100000);
+        }
+        return 100000;
     }
 
     static getExcludedFiles(): string[] {
-        this.ensureConfigListener();
+        const vscode = getVscode();
+        if (vscode) {
+            if (this._excludedFilesCache) {
+                return this._excludedFilesCache;
+            }
 
-        if (this._excludedFilesCache) {
+            const filesExclude = vscode.workspace.getConfiguration("files").get<Record<string, boolean>>("exclude", {});
+            const userExclusions = Object.keys(filesExclude).filter(key => filesExclude[key]);
+
+            const defaultExclusions = [
+                'node_modules', 'dist', 'build', 'out', 'coverage', '.git', '.vscode', '.idea', '.DS_Store'
+            ];
+
+            this._excludedFilesCache = Array.from(new Set([...defaultExclusions, ...userExclusions]));
             return this._excludedFilesCache;
         }
-
-        const filesExclude = vscode.workspace.getConfiguration("files").get<Record<string, boolean>>("exclude", {});
-        const userExclusions = Object.keys(filesExclude).filter(key => filesExclude[key]);
-
-        const defaultExclusions = [
-            'node_modules', 'dist', 'build', 'out', 'coverage', '.git', '.vscode', '.idea', '.DS_Store'
-        ];
-
-        this._excludedFilesCache = Array.from(new Set([...defaultExclusions, ...userExclusions]));
-        return this._excludedFilesCache;
+        // CLI default exclusions
+        return ['node_modules', 'dist', 'build', 'out', 'coverage', '.git', '.vscode', '.idea', '.DS_Store'];
     }
 
     static getKeepRecentMessages(): number {
-        return this.getConfig().get<number>("keepRecentMessages", 30);
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<number>("keepRecentMessages", 30);
+        }
+        return 30;
     }
 
     static getTokensPerChar(): number {
-        // Default to ~4 chars per token (0.25)
-        return this.getConfig().get<number>("tokensPerChar", 0.25);
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<number>("tokensPerChar", 0.25);
+        }
+        return 0.25;
     }
 
     static isYoloEnabled(): boolean {
-        return this.getConfig().get<boolean>("yoloEnabled", true);
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<boolean>("yoloEnabled", true);
+        }
+        return true;
     }
 
     static getYoloProfile(): 'demo_day' | 'balanced' | 'recovery' {
-        return this.getConfig().get<'demo_day' | 'balanced' | 'recovery'>("yoloProfile", "balanced");
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<'demo_day' | 'balanced' | 'recovery'>("yoloProfile", "balanced");
+        }
+        return "balanced";
     }
 
     static getYoloAggression(): number {
-        const value = this.getConfig().get<number>("yoloAggression", 1.0);
+        const vscode = getVscode();
+        let value = 1.0;
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("yoloAggression", 1.0);
+        }
         return Math.max(0.5, Math.min(1.5, value));
     }
 
     static getYoloMaxRequiredActions(): number {
-        const value = this.getConfig().get<number>("yoloMaxRequiredActions", 2);
+        const vscode = getVscode();
+        let value = 2;
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("yoloMaxRequiredActions", 2);
+        }
         return Math.max(0, Math.min(5, value));
     }
 }

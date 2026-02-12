@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { AIProvider } from "../providers/AIProvider.js";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
 import { MarieProgressTracker } from "./MarieProgressTracker.js";

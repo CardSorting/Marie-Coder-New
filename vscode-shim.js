@@ -74,7 +74,11 @@ export const window = {
         return await task({
             report: (increment) => { }
         });
-    }
+    },
+    createTextEditorDecorationType: (options) => ({
+        key: `decoration_${Date.now()}`,
+        dispose: () => { }
+    })
 };
 
 export const commands = {
@@ -208,6 +212,44 @@ export const ConfigurationTarget = {
 export const EndOfLine = {
     LF: 1,
     CRLF: 2
+};
+
+export const OverviewRulerLane = {
+    Left: 1,
+    Center: 2,
+    Right: 3,
+    Full: 4
+};
+
+export const ThemeColor = class ThemeColor {
+    constructor(id) {
+        this.id = id;
+    }
+};
+
+export const EventEmitter = class EventEmitter {
+    constructor() {
+        this._listeners = [];
+    }
+    event(listener) {
+        this._listeners.push(listener);
+        return {
+            dispose: () => {
+                const index = this._listeners.indexOf(listener);
+                if (index > -1) {
+                    this._listeners.splice(index, 1);
+                }
+            }
+        };
+    }
+    fire(data) {
+        for (const listener of this._listeners) {
+            listener(data);
+        }
+    }
+    dispose() {
+        this._listeners = [];
+    }
 };
 
 export const version = '1.85.0';
