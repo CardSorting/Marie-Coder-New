@@ -10,7 +10,7 @@ interface SetupWizardProps {
     onComplete: () => void;
 }
 
-type SetupStep = 'provider' | 'apikey' | 'model' | 'complete';
+type SetupStep = 'provider' | 'apikey' | 'model' | 'customModel' | 'complete';
 
 const providers = [
     { label: 'Anthropic (Claude)', value: 'anthropic' },
@@ -18,16 +18,25 @@ const providers = [
     { label: 'Cerebras', value: 'cerebras' },
 ];
 
-const anthropicModels = [
-    { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet-20241022' },
-    { label: 'Claude 3.5 Haiku', value: 'claude-3-5-haiku-20241022' },
-    { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229' },
+// Just a few popular examples - users can enter any model
+const anthropicExamples = [
+    { label: 'Claude 3.5 Sonnet (Recommended)', value: 'claude-3-5-sonnet-20241022' },
+    { label: 'Claude 3.5 Haiku (Fast)', value: 'claude-3-5-haiku-20241022' },
+    { label: 'Claude 3 Opus (Powerful)', value: 'claude-3-opus-20240229' },
+    { label: '✏️  Enter custom model ID...', value: 'custom' },
 ];
 
-const openrouterModels = [
+const openrouterExamples = [
     { label: 'Claude 3.5 Sonnet', value: 'anthropic/claude-3.5-sonnet' },
     { label: 'GPT-4o', value: 'openai/gpt-4o' },
     { label: 'GPT-4o Mini', value: 'openai/gpt-4o-mini' },
+    { label: '✏️  Enter custom model ID...', value: 'custom' },
+];
+
+const cerebrasExamples = [
+    { label: 'Llama 3.1 8B', value: 'llama3.1-8b' },
+    { label: 'Llama 3.1 70B', value: 'llama3.1-70b' },
+    { label: '✏️  Enter custom model ID...', value: 'custom' },
 ];
 
 export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
@@ -35,7 +44,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     const [step, setStep] = useState<SetupStep>('provider');
     const [provider, setProvider] = useState<string>('anthropic');
     const [apiKey, setApiKey] = useState<string>('');
-    const [model, setModel] = useState<string>('claude-3-5-sonnet-20241022');
+    const [model, setModel] = useState<string>('');
+    const [customModelInput, setCustomModelInput] = useState<string>('');
     const [showKey, setShowKey] = useState(false);
 
     const handleProviderSelect = useCallback((item: { value: string }) => {
@@ -50,12 +60,26 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         }
     }, []);
 
-    const handleModelSelect = useCallback((item: { value: string }) => {
-        setModel(item.value);
+    const handleModelSelect = useCallback((item: { value: string; label: string }) => {
+        if (item.value === 'custom') {
+            setStep('customModel');
+        } else {
+            saveConfig(item.value);
+        }
+    }, [provider, apiKey, onComplete]);
+
+    const handleCustomModelSubmit = useCallback((value: string) => {
+        if (value.trim()) {
+            saveConfig(value.trim());
+        }
+    }, [provider, apiKey, onComplete]);
+
+    const saveConfig = useCallback((selectedModel: string) => {
+        setModel(selectedModel);
         // Save configuration
         const config: Record<string, string> = {
             aiProvider: provider,
-            model: item.value,
+            model: selectedModel,
         };
         if (provider === 'anthropic') {
             config.apiKey = apiKey;
@@ -85,25 +109,27 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         }
     };
 
-    const getApiKeyEnvVar = () => {
+    const getApiKeyHelp = () => {
         switch (provider) {
             case 'anthropic':
-                return 'ANTHROPIC_API_KEY';
+                return 'Get your key at: console.anthropic.com';
             case 'openrouter':
-                return 'OPENROUTER_API_KEY';
+                return 'Get your key at: openrouter.com/keys';
             case 'cerebras':
-                return 'CEREBRAS_API_KEY';
+                return 'Get your key at: cloud.cerebras.ai';
             default:
-                return 'API_KEY';
+                return '';
         }
     };
 
     const getModels = () => {
         switch (provider) {
             case 'openrouter':
-                return openrouterModels;
+                return openrouterExamples;
+            case 'cerebras':
+                return cerebrasExamples;
             default:
-                return anthropicModels;
+                return anthropicExamples;
         }
     };
 
@@ -118,32 +144,38 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
     return (
         <Box flexDirection="column" padding={1}>
+            <Banner />
             <Box marginBottom={1}>
                 <Text color={marieTheme.colors.primary} bold>
-                    🌸 Marie CLI Setup
+                    🌸 Initial Setup
                 </Text>
             </Box>
 
             {step === 'provider' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text>Select your AI provider:</Text>
+                        <Text bold>Select your AI provider:</Text>
                     </Box>
                     <SelectInput
                         items={providers}
                         onSelect={handleProviderSelect}
                     />
+                    <Box marginTop={1}>
+                        <Text dimColor>
+                            This determines which API to use for AI requests.
+                        </Text>
+                    </Box>
                 </>
             )}
 
             {step === 'apikey' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text>Enter your {getApiKeyLabel()}:</Text>
+                        <Text bold>Enter your {getApiKeyLabel()}:</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
-                            (Get your key from the provider's website)
+                            {getApiKeyHelp()}
                         </Text>
                     </Box>
                     <Box>
@@ -152,6 +184,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                             onChange={setApiKey}
                             onSubmit={handleApiKeySubmit}
                             mask={showKey ? undefined : '*'}
+                            placeholder="sk-..."
                         />
                     </Box>
                     <Box marginTop={1}>
@@ -165,12 +198,48 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'model' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text>Select your default model:</Text>
+                        <Text bold>Select your model (or enter custom):</Text>
+                    </Box>
+                    <Box marginBottom={1}>
+                        <Text dimColor>
+                            Popular options for {provider}:
+                        </Text>
                     </Box>
                     <SelectInput
                         items={getModels()}
                         onSelect={handleModelSelect}
                     />
+                    <Box marginTop={1}>
+                        <Text dimColor>
+                            Models change frequently. Choose "Enter custom" for latest models.
+                        </Text>
+                    </Box>
+                </>
+            )}
+
+            {step === 'customModel' && (
+                <>
+                    <Box marginBottom={1}>
+                        <Text bold>Enter the model ID:</Text>
+                    </Box>
+                    <Box marginBottom={1}>
+                        <Text dimColor>
+                            Example: claude-3-opus-20240229, gpt-4-turbo, etc.
+                        </Text>
+                    </Box>
+                    <Box>
+                        <TextInput
+                            value={customModelInput}
+                            onChange={setCustomModelInput}
+                            onSubmit={handleCustomModelSubmit}
+                            placeholder="model-name"
+                        />
+                    </Box>
+                    <Box marginTop={1}>
+                        <Text dimColor>
+                            Enter the exact model identifier from your provider's docs
+                        </Text>
+                    </Box>
                 </>
             )}
 

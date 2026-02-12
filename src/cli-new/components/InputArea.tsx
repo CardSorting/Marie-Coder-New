@@ -81,13 +81,6 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 <TextInput
                     value={input}
                     onChange={handleChange}
-                    onSubmit={(value) => {
-                        if (value.trim()) {
-                            onSubmit(value);
-                            setInput('');
-                            setShowCommands(false);
-                        }
-                    }}
                     placeholder={placeholder}
                     focus={true}
                 />

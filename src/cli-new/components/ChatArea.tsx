@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Box, useStdout } from 'ink';
+import React, { useState, useEffect } from 'react';
+import { Box, useStdout, useStdin } from 'ink';
 import { MessageBubble } from './MessageBubble.js';
 import { Message, StreamingState } from '../types/cli.js';
 
@@ -8,17 +8,32 @@ interface ChatAreaProps {
     streamingState: StreamingState;
 }
 
+const MAX_VISIBLE_MESSAGES = 50;
+
 export const ChatArea: React.FC<ChatAreaProps> = ({ messages, streamingState }) => {
     const { stdout } = useStdout();
-    const scrollRef = useRef<number>(0);
+    const [dimensions, setDimensions] = useState({ rows: stdout.rows, columns: stdout.columns });
 
-    // Auto-scroll to bottom when new messages arrive
+    // Handle terminal resize
     useEffect(() => {
-        scrollRef.current = messages.length;
-    }, [messages.length]);
+        const handleResize = () => {
+            setDimensions({ rows: stdout.rows, columns: stdout.columns });
+        };
 
-    // Calculate available height
-    const availableHeight = stdout.rows - 10; // Reserve space for header and input
+        stdout.on('resize', handleResize);
+        return () => {
+            stdout.off('resize', handleResize);
+        };
+    }, [stdout]);
+
+    // Only show recent messages to prevent overflow
+    const visibleMessages = messages.length > MAX_VISIBLE_MESSAGES
+        ? messages.slice(-MAX_VISIBLE_MESSAGES)
+        : messages;
+
+    // Calculate available height (reserve space for header, input, status)
+    const reservedHeight = 8;
+    const availableHeight = Math.max(5, dimensions.rows - reservedHeight);
 
     return (
         <Box
@@ -26,11 +41,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, streamingState }) 
             height={availableHeight}
             overflow="hidden"
         >
-            {messages.map((message, index) => (
+            {messages.length > MAX_VISIBLE_MESSAGES && (
+                <Box marginY={0} paddingX={1}>
+                    <MessageBubble
+                        message={{
+                            id: 'scroll-notice',
+                            role: 'system',
+                            content: `... ${messages.length - MAX_VISIBLE_MESSAGES} older messages hidden ...`,
+                            timestamp: Date.now(),
+                        }}
+                    />
+                </Box>
+            )}
+
+            {visibleMessages.map((message, index) => (
                 <MessageBubble
                     key={message.id}
                     message={message}
-                    isStreaming={streamingState.isActive && index === messages.length - 1}
+                    isStreaming={streamingState.isActive && index === visibleMessages.length - 1 && message.role === 'assistant'}
                 />
             ))}
 

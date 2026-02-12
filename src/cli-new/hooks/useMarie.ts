@@ -92,10 +92,11 @@ export function useMarie(options: UseMarieOptions) {
 
             setMessages(prev => [...prev, assistantMessage]);
         } catch (error) {
+            const errorContent = error instanceof Error ? error.message : String(error);
             const errorMessage: Message = {
                 id: `msg_${Date.now()}`,
                 role: 'system',
-                content: `Error: ${error}`,
+                content: errorContent.startsWith('Error:') ? errorContent : `Error: ${errorContent}`,
                 timestamp: Date.now(),
             };
             setMessages(prev => [...prev, errorMessage]);

@@ -10,7 +10,7 @@ export const Banner: React.FC<BannerProps> = ({ show = true }) => {
     if (!show) return null;
 
     return (
-        <Box flexDirection="column" alignItems="center" marginY={1}>
+        <Box flexDirection="column" alignItems="center" marginTop={0} marginBottom={1}>
             {/* Claude Code inspired artistic banner */}
             <Box flexDirection="column" alignItems="center">
                 <Text color={marieTheme.colors.primary}>
@@ -51,13 +51,6 @@ export const Banner: React.FC<BannerProps> = ({ show = true }) => {
                 </Text>
                 <Text color={marieTheme.colors.primary}>
                     {'    ╰──────────────────────────────────────────────╯'}
-                </Text>
-            </Box>
-
-            {/* Decorative elements */}
-            <Box marginTop={1}>
-                <Text color={marieTheme.colors.muted}>
-                    {'  ════════════════════════════════════════════════════  '}
                 </Text>
             </Box>
         </Box>
