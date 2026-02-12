@@ -141,7 +141,8 @@ export class OpenRouterStreamParser {
         const events: AIStreamEvent[] = [];
 
         // 1. If we are in tool mode, try to extract from buffer
-        let extracted = JsonUtils.extractToolCall(this.llamaBufferParts.join(''));
+        const bufferContent = this.llamaBufferParts.join('');
+        let extracted = JsonUtils.extractToolCall(bufferContent);
 
         // 2. If buffer fails or wasn't applicable, attempt extraction from full content as a last resort
         // This catches models that output raw JSON without any tags at all.
@@ -175,11 +176,18 @@ export class OpenRouterStreamParser {
                 };
                 this.indexCount++;
             }
+
+            // IMPORTANT: Clear buffer after successful extraction to prevent duplicate emission
+            this.llamaBufferParts = [];
         } else {
             // CRITICAL: If we were swallowing text but failed to extract a tool,
             // we MUST flush the swallowed text as content so the user doesn't lose it.
+            // BUT only if we haven't already processed this content!
             const llamaBuffer = this.llamaBufferParts.join('');
-            if (llamaBuffer.trim()) {
+            if (llamaBuffer.trim() && llamaBuffer !== bufferContent) {
+                events.push({ type: "content_delta", text: llamaBuffer });
+            } else if (llamaBuffer.trim() && this.llamaToolMode) {
+                // Only emit if we were actually in tool mode (content was being swallowed)
                 events.push({ type: "content_delta", text: llamaBuffer });
             }
         }

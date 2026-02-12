@@ -151,6 +151,31 @@ export class JsonUtils {
             return null;
         }
 
+        // 0c. NEW: Check for JSON tool_calls array format (e.g., from Claude)
+        // Format: { "tool_calls": [{ "id": "...", "type": "write_file", "arguments": {...} }] }
+        try {
+            const jsonStart = contentToParse.indexOf('{');
+            const jsonEnd = contentToParse.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                const jsonCandidate = contentToParse.substring(jsonStart, jsonEnd + 1);
+                const parsed = JSON.parse(jsonCandidate);
+                if (parsed.tool_calls && Array.isArray(parsed.tool_calls) && parsed.tool_calls.length > 0) {
+                    const firstCall = parsed.tool_calls[0];
+                    if (firstCall.type && firstCall.arguments) {
+                        console.log('[Marie] JsonUtils: Found JSON tool_calls format');
+                        return {
+                            name: firstCall.type,
+                            input: firstCall.arguments,
+                            id: firstCall.id,
+                            repaired: true
+                        };
+                    }
+                }
+            }
+        } catch (e) {
+            // Not valid JSON or not the right format, continue with other parsers
+        }
+
         // 1. Check for Llama 3 / DeepSeek style tags first (more specific)
         const llamaMatch = contentToParse.match(/<(?:\|tool_call_begin\|>|\|tool_calls_section_begin\|>)\s*([\w\.]+)(?::\d+)?(?:\s*<\|tool_call_arguments?_begin\|>)?\s*([\s\S]*?)(?:\s*(?:<\|tool_call_end\|>|<\|tool_calls_section_end\|>)|$)/);
 
