@@ -10,34 +10,9 @@ interface SetupWizardProps {
     onComplete: () => void;
 }
 
-type SetupStep = 'welcome' | 'quickstart' | 'provider' | 'apikey' | 'model' | 'customModel' | 'review' | 'complete';
+type SetupStep = 'welcome' | 'provider' | 'apikey' | 'model' | 'customModel' | 'review' | 'complete';
 
-const TOTAL_STEPS = 5;
-
-// Quick start presets
-const presets = [
-    {
-        label: '⚡ Quick Start - Claude 3.5 Sonnet (Recommended)',
-        value: 'claude-sonnet',
-        provider: 'anthropic',
-        model: 'claude-3-5-sonnet-20241022',
-        description: 'Best for coding tasks'
-    },
-    {
-        label: '⚡ Quick Start - GPT-4o via OpenRouter',
-        value: 'gpt4o',
-        provider: 'openrouter',
-        model: 'openai/gpt-4o',
-        description: 'Access to GPT-4o'
-    },
-    {
-        label: '✏️  Custom Configuration',
-        value: 'custom',
-        provider: '',
-        model: '',
-        description: 'Choose your own provider and model'
-    },
-];
+const TOTAL_STEPS = 4;
 
 const providers = [
     { label: '◈ Anthropic (Claude) - Best for coding', value: 'anthropic', description: 'Claude models, excellent code understanding' },
@@ -93,43 +68,28 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     const goBack = useCallback(() => {
         setValidationError('');
         setShowHelp(false);
-        if (step === 'quickstart') {
+        if (step === 'provider') {
             setStep('welcome');
             setCurrentStepNum(0);
-        } else if (step === 'provider') {
-            setStep('quickstart');
-            setCurrentStepNum(1);
         } else if (step === 'apikey') {
             setStep('provider');
-            setCurrentStepNum(2);
+            setCurrentStepNum(1);
         } else if (step === 'model') {
             setStep('apikey');
-            setCurrentStepNum(3);
+            setCurrentStepNum(2);
         } else if (step === 'customModel') {
             setStep('model');
-            setCurrentStepNum(4);
+            setCurrentStepNum(3);
         } else if (step === 'review') {
             setStep('model');
-            setCurrentStepNum(4);
-        }
-    }, [step]);
-
-    const handlePresetSelect = useCallback((item: typeof presets[0]) => {
-        if (item.value === 'custom') {
-            setStep('provider');
-            setCurrentStepNum(2);
-        } else {
-            setProvider(item.provider);
-            setModel(item.model);
-            setStep('apikey');
             setCurrentStepNum(3);
         }
-    }, []);
+    }, [step]);
 
     const handleProviderSelect = useCallback((item: typeof providers[0]) => {
         setProvider(item.value);
         setStep('apikey');
-        setCurrentStepNum(3);
+        setCurrentStepNum(2);
     }, []);
 
     const handleApiKeySubmit = useCallback((value: string) => {
@@ -143,10 +103,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         setValidationError('');
         if (model && provider) {
             setStep('review');
-            setCurrentStepNum(5);
+            setCurrentStepNum(4);
         } else {
             setStep('model');
-            setCurrentStepNum(4);
+            setCurrentStepNum(3);
         }
     }, [provider, model]);
 
@@ -156,7 +116,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         } else {
             setModel(item.value);
             setStep('review');
-            setCurrentStepNum(5);
+            setCurrentStepNum(4);
         }
     }, []);
 
@@ -164,7 +124,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         if (value.trim()) {
             setModel(value.trim());
             setStep('review');
-            setCurrentStepNum(5);
+            setCurrentStepNum(4);
         }
     }, []);
 
@@ -271,37 +231,24 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
-                            Choose how you'd like to configure Marie:
+                            Choose your AI provider to get started:
                         </Text>
                     </Box>
+                    <SelectInput
+                        items={providers.map(p => ({ label: p.label, value: p.value }))}
+                        onSelect={(item) => {
+                            const prov = providers.find(p => p.value === item.value)!;
+                            handleProviderSelect(prov);
+                        }}
+                    />
                     <Box marginTop={1}>
-                        <Text color={marieTheme.colors.secondary}>
-                            Press Enter to continue →
+                        <Text dimColor>
+                            Tip: Anthropic (Claude) is recommended for coding tasks
                         </Text>
                     </Box>
                     <Box marginTop={1}>
                         <Text dimColor>
                             (Press Esc to quit, ? for help)
-                        </Text>
-                    </Box>
-                </>
-            )}
-
-            {step === 'quickstart' && (
-                <>
-                    <Box marginBottom={1}>
-                        <Text bold>Step 1: Choose your setup method</Text>
-                    </Box>
-                    <SelectInput
-                        items={presets.map(p => ({ label: p.label, value: p.value }))}
-                        onSelect={(item) => {
-                            const preset = presets.find(p => p.value === item.value)!;
-                            handlePresetSelect(preset);
-                        }}
-                    />
-                    <Box marginTop={1}>
-                        <Text dimColor>
-                            Quick start uses recommended settings for most users
                         </Text>
                     </Box>
                     {showHelp && <HelpBox />}
@@ -311,7 +258,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'provider' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Step 2: Choose your AI provider</Text>
+                        <Text bold>Step 1: Choose your AI provider</Text>
                     </Box>
                     <SelectInput
                         items={providers.map(p => ({ label: p.label, value: p.value }))}
@@ -332,7 +279,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'apikey' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Step 3: Enter your {getApiKeyLabel()}</Text>
+                        <Text bold>Step 2: Enter your {getApiKeyLabel()}</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
@@ -367,7 +314,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'model' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Step 4: Select your model</Text>
+                        <Text bold>Step 3: Select your model</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
@@ -390,7 +337,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'customModel' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Step 4: Enter custom model ID</Text>
+                        <Text bold>Step 3: Enter custom model ID</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
@@ -423,7 +370,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             {step === 'review' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Step 5: Review your settings</Text>
+                        <Text bold>Step 4: Review your settings</Text>
                     </Box>
                     <Box flexDirection="column" marginY={1} padding={1} borderStyle="round" borderColor={marieTheme.colors.secondary}>
                         <Text><Text bold>Provider:</Text> {provider}</Text>
