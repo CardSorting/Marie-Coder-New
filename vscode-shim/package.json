@@ -1,0 +1,10 @@
+{
+    "name": "vscode",
+    "version": "1.85.0",
+    "description": "VS Code API shim for CLI usage",
+    "main": "./index.js",
+    "type": "module",
+    "exports": {
+        ".": "./index.js"
+    }
+}

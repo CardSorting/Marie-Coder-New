@@ -252,12 +252,18 @@ class MarieTerminal {
 
     private printHeader() {
         console.log(`
-${ANSI.cyan}${ANSI.bold}    __  ___      __        __${ANSI.reset}
-${ANSI.cyan}${ANSI.bold}   /  |/  /___ _/ /_____ _/ /_${ANSI.reset}
-${ANSI.cyan}${ANSI.bold}  / /|_/ / __ '/ //_/ _ '/ __/${ANSI.reset}
-${ANSI.cyan}${ANSI.bold} / /  / / /_/ / ,< / /_/ / /_/${ANSI.reset}
-${ANSI.cyan}${ANSI.bold}/_/  /_/\\__,_/_/|_|\\__,_/_.__/${ANSI.reset}
-${ANSI.gray}                       CLI v0.1${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}╔════════════════════════════════════╗${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║                                    ║${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ███╗   ███╗ █████╗ ██████╗ ██╗███████╗${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ████╗ ████║██╔══██╗██╔══██╗██║██╔════╝${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ██╔████╔██║███████║██████╔╝██║█████╗  ${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ██║╚██╔╝██║██╔══██║██╔══██╗██║██╔══╝  ${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ██║ ╚═╝ ██║██║  ██║██║  ██║██║███████╗${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║   ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║                                    ║${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║        AI Coding Assistant         ║${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}║            CLI v0.1                ║${ANSI.reset}
+${ANSI.cyan}${ANSI.bold}╚════════════════════════════════════╝${ANSI.reset}
 `);
     }
 
