@@ -1,38 +1,20 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import './index.css'
+// Entry point - minimal
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles.css';
 
-// STABILITY: Global error tracking for unhandled exceptions outside React
-window.addEventListener('error', (event) => {
-  import('./utils/vscode').then(({ vscode }) => {
-    vscode.postMessage({
-      type: 'error',
-      value: {
-        message: event.message,
-        stack: event.error?.stack
-      }
-    });
-  }).catch(() => { });
+// Error handling
+window.addEventListener('error', (e) => {
+  console.error('[Webview Error]', e.error);
 });
 
-window.addEventListener('unhandledrejection', (event) => {
-  import('./utils/vscode').then(({ vscode }) => {
-    vscode.postMessage({
-      type: 'error',
-      value: {
-        message: `Unhandled Promise Rejection: ${event.reason?.message || event.reason}`,
-        stack: event.reason?.stack
-      }
-    });
-  }).catch(() => { });
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[Webview Rejection]', e.reason);
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>,
-)
+    <App />
+  </React.StrictMode>
+);
