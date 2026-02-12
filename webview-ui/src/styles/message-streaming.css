@@ -1,0 +1,46 @@
+.message-progress-rail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #a855f7, #6366f1);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 5;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    opacity: 0.8;
+}
+
+.message-status-badge.stage-flash {
+    animation: slideDownIn 0.3s cubic-bezier(0.4, 0, 0.2, 1), stage-change-flash 0.5s ease-out;
+}
+
+/* Streaming Pulse Dot */
+.streaming-pulse-dot {
+    width: 6px;
+    height: 6px;
+    background: #a78bfa;
+    border-radius: 50%;
+    animation: beaconPulse 1s infinite;
+}
+
+.message-bubble.is-streaming {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(to bottom, #a855f7, #6366f1, #a855f7) 1;
+    background-clip: padding-box;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.message-bubble.is-streaming::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -3px;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, transparent, #a855f7, transparent);
+    background-size: 100% 200%;
+    animation: streaming-border-flow 1.5s infinite linear;
+    z-index: 11;
+}

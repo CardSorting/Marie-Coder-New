@@ -1,0 +1,63 @@
+/* Rituals & Soul */
+
+
+.achievement-feed {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(168, 85, 247, 0.2);
+}
+
+.ritual-badge,
+.lifecycle-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slide-in-top 0.4s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.marie-brain-waves {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.brain-wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid var(--vscode-progressBar-background);
+    border-radius: 50%;
+    animation: brainWavePulse 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+.sparkle-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.sparkle-particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: sparkleExit 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}

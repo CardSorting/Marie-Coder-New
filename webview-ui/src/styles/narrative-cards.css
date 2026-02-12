@@ -1,0 +1,255 @@
+/* Phase 7: Retrospective Wisdom & Garden Growth */
+.retrospective-wisdom-container {
+    padding: 12px;
+    background: rgba(var(--vscode-editor-background), 0.5);
+    backdrop-filter: blur(4px);
+    border-radius: 8px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: slideUp 0.4s ease-out;
+}
+
+.garden-impact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.impact-card {
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.impact-card.cherished {
+    background: rgba(var(--vscode-charts-green), 0.1);
+    border-color: rgba(var(--vscode-charts-green), 0.2);
+}
+
+.impact-card.released {
+    background: rgba(var(--vscode-charts-red), 0.1);
+    border-color: rgba(var(--vscode-charts-red), 0.2);
+}
+
+.impact-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.impact-value {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--vscode-editor-font-family);
+}
+
+.impact-subtitle {
+    font-size: 9px;
+    opacity: 0.6;
+}
+
+.pass-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.timeline-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.timeline-items {
+    display: flex;
+    flex-direction: column;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 12px;
+}
+
+.timeline-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 10px;
+}
+
+.marker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--vscode-button-secondaryBackground);
+    margin-top: 6px;
+}
+
+.marker-line {
+    flex-grow: 1;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 0;
+}
+
+.timeline-content {
+    flex-grow: 1;
+    padding-bottom: 12px;
+}
+
+.pass-meta {
+    font-size: 9px;
+    font-weight: 600;
+    opacity: 0.5;
+    margin-bottom: 2px;
+}
+
+.pass-summary {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.pass-reflection {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Phase 8: Narrative Synthesis & Completion Cards */
+.narrative-cards-section {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.walkthrough-card-container {
+    position: relative;
+    background: linear-gradient(135deg, rgba(var(--vscode-editor-background), 0.8) 0%, rgba(var(--vscode-editor-background), 0.4) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    overflow: hidden;
+    animation: paperGlide 0.5s cubic-bezier(0.2, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes paperGlide {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.walkthrough-card-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.walkthrough-card-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 16px;
+}
+
+.walkthrough-icon-section {
+    display: flex;
+    align-items: flex-start;
+}
+
+.icon-pulse {
+    background: rgba(168, 85, 247, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: beaconPulse 2s infinite ease-in-out;
+}
+
+.walkthrough-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.walkthrough-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.walkthrough-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #a855f7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.walkthrough-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--vscode-foreground);
+}
+
+.walkthrough-description {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    margin: 0;
+    line-height: 1.5;
+    opacity: 0.9;
+}
+
+.walkthrough-open-button {
+    margin-top: 8px;
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.walkthrough-open-button:hover {
+    background: var(--vscode-button-hoverBackground);
+    transform: translateX(2px);
+}

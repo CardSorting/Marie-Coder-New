@@ -1,0 +1,13 @@
+# Standard Node
+node_modules
+dist
+out
+.DS_Store
+.vscode-test
+
+# Extension specific
+*.vsix
+.vscode-test/
+
+# Cerebras SDK (User requested)
+cerebras/cerebras_cloud_sdk

@@ -1,0 +1,99 @@
+.thinking-bubble {
+    padding: 12px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.thinking-indicator {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.thought-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both, pulse-glow 2s infinite ease-in-out;
+    box-shadow: 0 0 5px rgba(168, 85, 247, 0.2);
+}
+
+.thought-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.thought-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.thinking-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 4px 0;
+}
+
+.thinking-indicator-wrapper {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.thinking-indicator-glow {
+    position: absolute;
+    inset: -10px;
+    background: var(--accent-gradient);
+    filter: blur(15px);
+    opacity: 0.15;
+    border-radius: 50%;
+    animation: rotateGlow 4s linear infinite;
+}
+
+.thinking-brain-wave {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    animation: brainWavePulse 3s infinite ease-out;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.thinking-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.thinking-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--marie-bubble-fg);
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: personalityPulse 1.4s infinite ease-in-out both;
+}
+
+.thinking-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.thinking-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.thinking-text {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+    animation: fadeInOut 2s infinite ease-in-out;
+}
+
+.thinking-text.fade-in-out {
+    animation: cross-fade-in 0.4s ease-out;
+}

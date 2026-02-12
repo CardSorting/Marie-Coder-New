@@ -1,0 +1,197 @@
+/* --- Presentation Mode Styles --- */
+body.presentation-mode {
+    overflow: hidden;
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+}
+
+body.presentation-mode .sidebar,
+body.presentation-mode .menu-toggle,
+body.presentation-mode header,
+body.presentation-mode footer {
+    display: none !important;
+}
+
+body.presentation-mode .content {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: none;
+}
+
+body.presentation-mode .doc-section {
+    display: none;
+    /* Hide all by default */
+    opacity: 0;
+    transition: all 0.5s ease-in-out;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 90vw;
+    height: 90vh;
+    overflow-y: auto;
+    background: white;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    border-radius: 30px;
+    display: flex;
+    /* Flex to center content if needed, but usually block is fine */
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Only the active slide is visible */
+body.presentation-mode .doc-section.active-slide {
+    display: flex;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    z-index: 20;
+}
+
+/* Typography sizing for presentation */
+body.presentation-mode h2 {
+    font-size: 3.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    width: 100%;
+}
+
+body.presentation-mode h3 {
+    font-size: 2.2rem;
+    margin-top: 2.5rem;
+}
+
+body.presentation-mode p,
+body.presentation-mode li {
+    font-size: 1.5rem;
+    line-height: 1.6;
+}
+
+body.presentation-mode pre {
+    font-size: 1.1rem;
+    padding: 2rem;
+    max-height: 60vh;
+    overflow: auto;
+}
+
+body.presentation-mode .code-block-container {
+    margin: 2rem 0;
+}
+
+body.presentation-mode table {
+    font-size: 1.3rem;
+}
+
+/* Presentation Controls */
+#presentation-controls {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    gap: 1rem;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.8rem;
+    border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+body.presentation-mode #presentation-controls {
+    display: flex;
+}
+
+.control-btn {
+    background: white;
+    border: 1px solid #eee;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+}
+
+.control-btn:hover {
+    transform: scale(1.1);
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.exit-btn {
+    background: #ffecf0;
+    color: #d6336c;
+    border-color: #ffecf0;
+    font-size: 0.9rem;
+    width: auto;
+    padding: 0 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+}
+
+.start-pres-btn {
+    margin-top: auto;
+    /* Push to bottom of sidebar */
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--primary-dark));
+    color: white !important;
+    text-align: center;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.start-pres-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Animations */
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+body.presentation-mode .doc-section.active-slide {
+    animation: slideIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Progress Bar */
+#presentation-progress {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.05);
+    z-index: 1001;
+}
+
+body.presentation-mode #presentation-progress {
+    display: block;
+}
+
+#progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    width: 0%;
+    transition: width 0.3s ease-out;
+    border-radius: 0 3px 3px 0;
+}

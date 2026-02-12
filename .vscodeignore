@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+src/**
+webview-ui/**
+node_modules/**
+tsconfig.json
+esbuild.mjs
+package-lock.json
+.git/**
+.gitignore
+!webview-ui/build/**
+!dist/**
+!assets/**

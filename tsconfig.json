@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "module": "NodeNext",
+        "target": "ESNext",
+        "lib": [
+            "ESNext"
+        ],
+        "sourceMap": true,
+        "outDir": "out",
+        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "NodeNext"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}

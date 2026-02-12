@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarieCoder | Knowledge Base 🧹✨</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Inter:wght@300;400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="css/core.css">
+    <!-- Presentation CSS -->
+    <link rel="stylesheet" href="css/presentation.css">
+</head>
+
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <span style="font-size: 2rem;">🧹</span>
+            <span>MarieCoder</span>
+        </div>
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search docs..." onkeyup="filterNav(this.value)">
+        </div>
+        <ul class="sidebar-nav" id="sidebar-nav">
+            <li><a href="#" class="active" onclick="showSection('mission')" data-tags="mission core values intent">✨
+                    Mission</a></li>
+            <li><a href="#" onclick="showSection('architecture')" data-tags="architecture zoning mapping logic">🏗️
+                    Architecture</a></li>
+            <li><a href="#" onclick="showSection('tools')"
+                    data-tags="tools command write read filesystem autonomous">🛠️ Marie's Tools</a></li>
+            <li><a href="#" onclick="showSection('setup')" data-tags="setup installation config scripts">🚀 Setup</a>
+            </li>
+            <li><a href="#" onclick="showSection('workflow')" data-tags="workflow loop intent plan act">🔄 The Loop</a>
+            </li>
+            <li><a href="#" onclick="showSection('physics')" data-tags="physics gravity zoning">🪐 The Physics</a></li>
+            <li><a href="#" onclick="showSection('future')" data-tags="future roadmap voice">🔮 The Future</a></li>
+
+            <li style="margin-top: auto; padding-top: 2rem;">
+                <a href="#" class="start-pres-btn" onclick="startPresentation()">
+                    🎤 Start Presentation
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <main class="content">
+        <header>
+            <h1>Knowledge Base</h1>
+            <p class="subtitle">The complete guide to the mindful AI coding extension for VS Code.</p>
+        </header>
+
+        <!-- Mission Section -->
+        <section id="mission" class="doc-section visible">
+            <h2>🛡️ The Concept</h2>
+            <p><strong>Coding with AI is fast, but dangerous.</strong> Without structure, it creates "Spaghetti Code"
+                that becomes impossible to maintain.</p>
+            <p>Marie is an <strong>AI Quality Guardrail</strong> that enforces strict architectural rules while you
+                build.</p>
+            <div class="values-grid">
+                <div class="value-card">
+                    <h3>🚫 The Hazard</h3>
+                    <p>Context loss & hallucinated dependencies.</p>
+                </div>
+                <div class="value-card">
+                    <h3>🛡️ The Guardrail</h3>
+                    <p>Enforced "Joy Zoning" protocols.</p>
+                </div>
+                <div class="value-card">
+                    <h3>🚀 The Result</h3>
+                    <p>Speed without the breakage.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section id="architecture" class="doc-section">
+            <h2>🏗️ The Logic: Self-Organizing Architecture</h2>
+            <div class="status-badge badge-mature">Core Protocol</div>
+            <p>Marie enforces <strong>Joy Zoning</strong>—a strict Separation of Concerns enforced by AI.</p>
+
+            <div class="values-grid">
+                <div class="value-card" style="border-left: 4px solid #B19CD9">
+                    <h3>1. Joyful (Logic)</h3>
+                    <p>Pure business logic. No side effects. No dependencies on Infra.</p>
+                </div>
+                <div class="value-card" style="border-left: 4px solid #FFD1DC">
+                    <h3>⬇️ One-Way Flow</h3>
+                    <p>Dependencies <strong>never</strong> leak upwards.</p>
+                </div>
+                <div class="value-card" style="border-left: 4px solid #E0F4FF">
+                    <h3>2. Plumbing (Infra)</h3>
+                    <p>The messy implementation details, isolated in their own zone.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tools Section -->
+        <section id="tools" class="doc-section">
+            <h2>⚡️ Autonomous Engineering</h2>
+            <p>Marie is an agent with <strong>Full Environment Control</strong> to maintain the codebase.</p>
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h3>📂 Filesystem Agency</h3>
+                    <p>Creates, moves, and refactors files autonomously to match the architecture.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>abrupt Self-Healing</h3>
+                    <p>Detects linter errors and fixes them automatically without user input.</p>
+                </div>
+                <div class="tool-card">
+                    <h3>� Semantic Search</h3>
+                    <p>Understands the <strong>intent</strong> of your code, not just the text.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Setup -->
+        <section id="setup" class="doc-section">
+            <h2>🚀 Zero-Friction Setup</h2>
+            <p>Get started in seconds. No complex configuration required.</p>
+            <div class="values-grid">
+                <div class="value-card">
+                    <h3>1. 📥 Install</h3>
+                    <p>Search "Marie" in the VS Code Marketplace and click Install.</p>
+                </div>
+                <div class="value-card">
+                    <h3>2. 🔑 Configure</h3>
+                    <p>Add your API Key to VS Code Settings.</p>
+                </div>
+                <div class="value-card">
+                    <h3>3. ✨ Zone</h3>
+                    <p>Run <code>Marie: Start Zoning</code> to organize your project.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: The Workflow -->
+        <section id="workflow" class="doc-section">
+            <h2>🔄 The Loop: From Intent to Magic</h2>
+            <p>How Marie actually works. A continuous cycle of intent and execution.</p>
+            <div class="values-grid">
+                <div class="value-card">
+                    <h3>1. 🗣️ Intent</h3>
+                    <p>"Add a dark mode toggle to the header."</p>
+                </div>
+                <div class="value-card">
+                    <h3>2. 🧠 Plan</h3>
+                    <p>Marie reads the file, checks the zoning, and proposes a diff.</p>
+                </div>
+                <div class="value-card">
+                    <h3>3. ⚡️ Act</h3>
+                    <p>She executes the code, runs the linter, and commits the change.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: The Physics -->
+        <section id="physics" class="doc-section">
+            <h2>🪐 The Physics of Code</h2>
+            <p>We don't just have "Rules". We have <strong>Gravity</strong>.</p>
+            <div
+                style="background: linear-gradient(180deg, #E2F9E1 0%, #FFF9C4 50%, #FFEBEE 100%); padding: 2rem; border-radius: 20px; text-align: center; font-weight: bold; color: #333; margin-top: 2rem;">
+                <div style="padding: 1rem; border-bottom: 2px dashed rgba(0,0,0,0.1);">⬆️ Pure Logic (Light & Floating)
+                </div>
+                <div style="padding: 1rem; border-bottom: 2px dashed rgba(0,0,0,0.1);">⬇️ Infra (Heavier)</div>
+                <div style="padding: 1rem;">⬇️⬇️ Plumbing (Heavy & Static)</div>
+            </div>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">Data falls down. It never
+                climbs back up.</p>
+        </section>
+
+        <!-- Slide 7: The Future -->
+        <section id="future" class="doc-section">
+            <h2>🔮 The Future</h2>
+            <div class="values-grid">
+                <div class="value-card">
+                    <h3>🗣️ Voice Mode</h3>
+                    <p>"Marie, refactor this file." No typing required.</p>
+                </div>
+                <div class="value-card">
+                    <h3>🤝 Team Sync</h3>
+                    <p>Shared zoning rules across the entire engineering team.</p>
+                </div>
+                <div class="value-card">
+                    <h3>🧩 Native Integration</h3>
+                    <p>Shipping as a VS Code Extension Marketplace item.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>Built with Meta-Refection & Love. ✨</p>
+        </footer>
+
+        <!-- Presentation Controls -->
+        <div id="presentation-controls">
+            <span id="slide-counter" style="font-weight: 600; color: var(--text-light); margin-right: 0.5rem;">1 /
+                5</span>
+            <button class="control-btn" onclick="prevSlide()">←</button>
+            <button class="control-btn" onclick="nextSlide()">→</button>
+            <button class="control-btn exit-btn" onclick="exitPresentation()">Exit</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="presentation-progress">
+            <div id="progress-fill"></div>
+        </div>
+    </main>
+
+    <!-- Core Scripts -->
+    <script src="js/app.js"></script>
+    <!-- Presentation Logic -->
+    <script src="js/presentation.js"></script>
+</body>
+
+</html>

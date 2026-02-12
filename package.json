@@ -1,0 +1,147 @@
+{
+  "name": "mariecoder",
+  "displayName": "MarieCoder",
+  "description": "Clean-slate AI coding agent.",
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "publisher": "marie",
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bozoegg/MarieCoder"
+  },
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Marie",
+      "properties": {
+        "marie.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API Key for Marie AI"
+        },
+        "marie.openrouterApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenRouter API Key for Marie AI"
+        },
+        "marie.cerebrasApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Cerebras API Key for Marie AI"
+        },
+        "marie.aiProvider": {
+          "type": "string",
+          "default": "anthropic",
+          "enum": [
+            "anthropic",
+            "openrouter",
+            "cerebras"
+          ],
+          "description": "Select the AI provider for Marie"
+        },
+        "marie.model": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "description": "Model ID to use (e.g., claude-3-5-sonnet-20241022 for Anthropic, or any valid model ID for OpenRouter)"
+        },
+        "marie.requireApproval": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require user approval for destructive actions (write file, run command)"
+        },
+        "marie.maxContextTokens": {
+          "type": "number",
+          "default": 100000,
+          "description": "Maximum estimated tokens to keep in conversation history before summarizing."
+        },
+        "marie.yoloEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable MarieYOLO founder-policy agent participation in council voting."
+        },
+        "marie.yoloProfile": {
+          "type": "string",
+          "default": "balanced",
+          "enum": [
+            "demo_day",
+            "balanced",
+            "recovery"
+          ],
+          "description": "Founder policy profile: demo_day for max momentum, balanced for mixed behavior, recovery for safety-first dampening."
+        },
+        "marie.yoloAggression": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.5,
+          "maximum": 1.5,
+          "description": "Global confidence multiplier applied to MarieYOLO decisions."
+        },
+        "marie.yoloMaxRequiredActions": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Maximum number of YOLO required-action hints parsed per decision."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mariecoder-ActivityBar",
+          "title": "MarieCoder",
+          "icon": "assets/icon.png"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mariecoder.clearChat",
+        "title": "Marie: Clear Chat",
+        "category": "Marie"
+      },
+      {
+        "command": "mariecoder.focusMarie",
+        "title": "Marie: Focus Marie Chat",
+        "category": "Marie"
+      }
+    ],
+    "views": {
+      "mariecoder-ActivityBar": [
+        {
+          "type": "webview",
+          "id": "mariecoder.SidebarProvider",
+          "name": "Marie Chat",
+          "icon": "assets/icon.png"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run build-webview && node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "npm run build-webview && node esbuild.mjs --production",
+    "build-webview": "cd webview-ui && npm install && npm run build",
+    "watch-webview": "cd webview-ui && npm run dev"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.84.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.73.0",
+    "@cerebras/cerebras_cloud_sdk": "^1.64.1",
+    "zod": "^3.22.0"
+  }
+}

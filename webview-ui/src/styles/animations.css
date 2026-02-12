@@ -1,0 +1,483 @@
+/* Animations */
+.marie-pulse {
+    animation: bgPulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transition: background 1s ease-in-out;
+}
+
+@keyframes bgPulse {
+
+    0%,
+    100% {
+        background-color: var(--vscode-editor-background);
+    }
+
+    50% {
+        background-color: rgba(236, 72, 153, 0.03);
+        /* Subtle pink glow */
+    }
+}
+
+@keyframes headerHeartbeat {
+
+    0%,
+    100% {
+        background: var(--vscode-editor-background);
+    }
+
+    50% {
+        background: rgba(168, 85, 247, 0.03);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(168, 85, 247, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+        opacity: 0.6;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes pageSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes statusPulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+@keyframes stage-change-flash {
+    0% {
+        filter: brightness(1);
+        transform: scale(1);
+    }
+
+    50% {
+        filter: brightness(1.5);
+        transform: scale(1.1);
+    }
+
+    100% {
+        filter: brightness(1);
+        transform: scale(1);
+    }
+}
+
+@keyframes streaming-border-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes cross-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes high-energy-dot {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        filter: brightness(1);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.2);
+        filter: brightness(1.5);
+    }
+}
+
+@keyframes toastPopIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes beaconPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0.7;
+    }
+}
+
+@keyframes rotateGlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes personalityPulse {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+        opacity: 0.3;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes badgeFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes revealUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes brainWavePulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.15;
+    }
+
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+@keyframes sparkleExit {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes messageTypewriter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+        clip-path: inset(0 100% 0 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes stepEntrance {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes stagePulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.3);
+    }
+}
+
+@keyframes streamDot {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes cursorBlink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes achievementSparkle {
+    0% {
+        opacity: 0;
+        transform: translateX(-10px);
+        filter: brightness(2);
+    }
+
+    50% {
+        filter: brightness(1.5);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+        filter: brightness(1);
+    }
+}
+
+@keyframes achievement-sparkle {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 0px var(--joy-gold));
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.5) drop-shadow(0 0 10px var(--joy-gold));
+    }
+}
+
+@keyframes diffRowPulse {
+    0% {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+@keyframes streamingBadgePulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+@keyframes streamingDotPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.4);
+    }
+
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0);
+    }
+}
+
+.staggered-reveal .reveal-item-1 {
+    animation: revealUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+    animation-delay: 0.1s;
+}
+
+.staggered-reveal .reveal-item-2 {
+    animation: revealUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+    animation-delay: 0.2s;
+}
+
+.staggered-reveal .reveal-item-3 {
+    animation: revealUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+    animation-delay: 0.3s;
+}
+
+.staggered-reveal .reveal-item-4 {
+    animation: revealUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+    animation-delay: 0.4s;
+}
+
+.shimmer-text {
+    background: linear-gradient(90deg,
+            var(--vscode-foreground) 0%,
+            #a78bfa 50%,
+            var(--vscode-foreground) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+}
