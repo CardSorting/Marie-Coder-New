@@ -59,28 +59,46 @@ export class OpenRouterStreamParser {
                 if (isEndTag) {
                     this.llamaBufferParts.push(tag);
 
-                    // Use robust extraction from JsonUtils
-                    const extracted = JsonUtils.extractToolCall(this.llamaBufferParts.join(''));
+                    // Validate: Check if we have actual content between section markers
+                    const bufferContent = this.llamaBufferParts.join('');
 
-                    if (extracted) {
-                        const id = extracted.id || `call_${Date.now()}_${this.indexCount}`;
+                    // Check for empty tool section (begin/end with nothing useful between)
+                    const hasBeginMarker = bufferContent.includes('<|tool_calls_section_begin|>') ||
+                        bufferContent.includes('<|tool_call_begin|>');
+                    const hasContentBetween = bufferContent.length > tag.length + 10; // Minimal content check
 
-                        events.push({
-                            type: "tool_call_delta",
-                            index: this.indexCount,
-                            id: id,
-                            name: extracted.name,
-                            argumentsDelta: JSON.stringify(extracted.input)
-                        });
+                    if (hasBeginMarker && !hasContentBetween) {
+                        console.warn('[Marie] Empty tool section detected - no tool content between markers');
+                        // Emit the buffer as content so user sees what happened
+                        events.push({ type: "content_delta", text: bufferContent });
+                    } else {
+                        // Use robust extraction from JsonUtils
+                        const extracted = JsonUtils.extractToolCall(bufferContent);
 
-                        this.toolCalls[this.indexCount] = {
-                            id: id,
-                            name: extracted.name,
-                            arguments: JSON.stringify(extracted.input)
-                        };
+                        if (extracted) {
+                            const id = extracted.id || `call_${Date.now()}_${this.indexCount}`;
 
-                        this.indexCount++;
-                        this.llamaToolMode = false; // Successfully extracted
+                            events.push({
+                                type: "tool_call_delta",
+                                index: this.indexCount,
+                                id: id,
+                                name: extracted.name,
+                                argumentsDelta: JSON.stringify(extracted.input)
+                            });
+
+                            this.toolCalls[this.indexCount] = {
+                                id: id,
+                                name: extracted.name,
+                                arguments: JSON.stringify(extracted.input)
+                            };
+
+                            this.indexCount++;
+                            this.llamaToolMode = false; // Successfully extracted
+                        } else {
+                            // Extraction failed - emit as content so nothing is lost
+                            console.warn('[Marie] Tool extraction failed, emitting as content');
+                            events.push({ type: "content_delta", text: bufferContent });
+                        }
                     }
 
                     this.llamaBufferParts = [];

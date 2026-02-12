@@ -7,5 +7,17 @@ export default defineConfig({
   build: {
     outDir: 'build',
     minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/index.js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'index.css') {
+            return 'assets/index.css';
+          }
+          return 'assets/[name][extname]';
+        },
+      },
+    },
   },
 });

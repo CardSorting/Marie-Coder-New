@@ -10,7 +10,9 @@ export class StreamTagDetector {
     private tags: string[] = [
         "<|tool_call_begin|>",
         "<|tool_call_end|>",
-        "<|tool_call_id|>",           // Some models emit tool IDs separately
+        "<|tool_calls_section_begin|>",  // Section begin marker
+        "<|tool_calls_section_end|>",    // Section end marker
+        "<|tool_call_id|>",              // Some models emit tool IDs separately
         "<|tool_call_argument_begin|>",
         "<|tool_call_arguments_begin|>", // Plural variant
         "<tool>",
@@ -25,9 +27,9 @@ export class StreamTagDetector {
         "</tool_code>",
         "<tool_call>",
         "</tool_call>",
-        "<|eot_id|>",                 // End of turn marker
-        "<|start_header_id|>",        // Header start marker
-        "<|end_header_id|>"           // Header end marker
+        "<|eot_id|>",                    // End of turn marker
+        "<|start_header_id|>",           // Header start marker
+        "<|end_header_id|>"              // Header end marker
     ];
 
     private prefixTree: PrefixTree;

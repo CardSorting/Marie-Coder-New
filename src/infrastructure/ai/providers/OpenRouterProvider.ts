@@ -127,9 +127,17 @@ export class OpenRouterProvider implements AIProvider {
 
     async createMessageStream(params: AIRequestParams, onUpdate: (event: AIStreamEvent) => void, signal?: AbortSignal): Promise<AIResponse> {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000);
+        let isTimeout = false;
+        const timeoutId = setTimeout(() => {
+            isTimeout = true;
+            controller.abort();
+        }, 120000);
 
-        const onAbort = () => controller.abort();
+        let isUserAbort = false;
+        const onAbort = () => {
+            isUserAbort = true;
+            controller.abort();
+        };
         if (signal) signal.addEventListener('abort', onAbort);
 
         try {
@@ -285,7 +293,16 @@ export class OpenRouterProvider implements AIProvider {
                 tool_uses: finalToolUses.length > 0 ? finalToolUses : undefined
             };
         } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') throw new Error("OpenRouter timeout");
+            if (error instanceof Error && error.name === 'AbortError') {
+                // Distinguish between user manual stop and actual timeout
+                if (isUserAbort) {
+                    throw new Error("Request stopped by user");
+                } else if (isTimeout) {
+                    throw new Error("OpenRouter timeout");
+                } else {
+                    throw new Error("Request aborted");
+                }
+            }
             throw error;
         } finally {
             clearTimeout(timeoutId);

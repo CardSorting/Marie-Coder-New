@@ -131,6 +131,11 @@ export class JsonUtils {
      */
     public static extractToolCall(text: any): ExtractedToolCall | null {
         if (typeof text !== 'string') return null;
+
+        // Guard: Empty or whitespace-only content
+        const trimmedText = text.trim();
+        if (!trimmedText || trimmedText.length < 5) return null;
+
         let contentToParse = text;
         let isLlama = false;
         let toolName = "";
@@ -139,12 +144,25 @@ export class JsonUtils {
         // We strip them to avoid regex confusion if they contain XML-like text
         contentToParse = contentToParse.replace(/<thought>[\s\S]*?<\/thought>/g, '');
 
+        // 0b. Guard: Check if content is only section markers with nothing between them
+        const onlyMarkersPattern = /^\s*<\|tool_calls_section_begin\|>\s*<\|tool_calls_section_end\|>\s*$/;
+        if (onlyMarkersPattern.test(contentToParse)) {
+            console.warn('[Marie] JsonUtils: Empty tool section markers detected');
+            return null;
+        }
+
         // 1. Check for Llama 3 / DeepSeek style tags first (more specific)
         const llamaMatch = contentToParse.match(/<(?:\|tool_call_begin\|>|\|tool_calls_section_begin\|>)\s*([\w\.]+)(?::\d+)?(?:\s*<\|tool_call_arguments?_begin\|>)?\s*([\s\S]*?)(?:\s*(?:<\|tool_call_end\|>|<\|tool_calls_section_end\|>)|$)/);
 
-        if (llamaMatch && llamaMatch[2].trim()) {
+        // Guard: Check for empty content between markers
+        if (llamaMatch) {
+            const capturedContent = llamaMatch[2];
+            if (!capturedContent || !capturedContent.trim()) {
+                console.warn('[Marie] JsonUtils: Tool section markers found but no content between them');
+                return null;
+            }
             toolName = llamaMatch[1].replace(/^functions\./, '');
-            contentToParse = llamaMatch[2];
+            contentToParse = capturedContent;
             isLlama = true;
         } else {
             // 1b. Check for compact Llama 3 / OpenRouter format: tool_name:id>JSON or tool_name>JSON

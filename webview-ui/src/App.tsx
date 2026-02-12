@@ -243,10 +243,7 @@ export default function App() {
             <div className="modal-body">
               <SettingsForm
                 settings={state.settings}
-                availableModels={state.availableModels}
-                isLoadingModels={state.isLoadingModels}
                 onSave={actions.saveSettings}
-                onFetchModels={actions.fetchModels}
               />
             </div>
             <div className="modal-footer">
@@ -271,22 +268,12 @@ export default function App() {
 // Settings Form Component
 function SettingsForm({
   settings,
-  availableModels,
-  isLoadingModels,
-  onSave,
-  onFetchModels
+  onSave
 }: {
   settings: Settings;
-  availableModels: { id: string; name: string }[];
-  isLoadingModels: boolean;
   onSave: (s: Settings) => void;
-  onFetchModels: (p: 'anthropic' | 'openrouter' | 'cerebras') => void;
 }) {
   const [local, setLocal] = useState(settings);
-
-  useEffect(() => {
-    onFetchModels(local.aiProvider);
-  }, [local.aiProvider]);
 
   return (
     <>
@@ -304,22 +291,14 @@ function SettingsForm({
       </div>
 
       <div className="form-group">
-        <label className="form-label">
-          Model {isLoadingModels && '(loading...)'}
-        </label>
-        <select
-          className="form-select"
+        <label className="form-label">Model Name</label>
+        <input
+          type="text"
+          className="form-input"
           value={local.model}
           onChange={(e) => setLocal({ ...local, model: e.target.value })}
-        >
-          {availableModels.length === 0 ? (
-            <option value={local.model}>{local.model}</option>
-          ) : (
-            availableModels.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))
-          )}
-        </select>
+          placeholder="e.g., claude-3-5-sonnet-20241022"
+        />
       </div>
 
       <div className="form-group">
