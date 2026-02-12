@@ -17,6 +17,7 @@ export function useMarie(options: UseMarieOptions) {
     });
     const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
     const [currentRun, setCurrentRun] = useState<any>(null);
+    const [runElapsedMs, setRunElapsedMs] = useState(0);
 
     useEffect(() => {
         marieRef.current = new MarieCLI(options.workingDir);
@@ -24,6 +25,16 @@ export function useMarie(options: UseMarieOptions) {
             marieRef.current?.dispose();
         };
     }, [options.workingDir]);
+
+    useEffect(() => {
+        if (!isLoading || !currentRun?.startedAt) return;
+
+        const interval = setInterval(() => {
+            setRunElapsedMs(Date.now() - currentRun.startedAt);
+        }, 250);
+
+        return () => clearInterval(interval);
+    }, [isLoading, currentRun?.startedAt]);
 
     const sendMessage = useCallback(async (content: string) => {
         if (!marieRef.current || isLoading) return;
@@ -76,6 +87,9 @@ export function useMarie(options: UseMarieOptions) {
                     setPendingApproval(approval);
                 } else if (event.type === 'run_started') {
                     setCurrentRun(event);
+                    setRunElapsedMs(0);
+                } else if (event.type === 'progress_update' && typeof event.elapsedMs === 'number') {
+                    setRunElapsedMs(event.elapsedMs);
                 }
             },
         };
@@ -103,6 +117,8 @@ export function useMarie(options: UseMarieOptions) {
         } finally {
             setIsLoading(false);
             setStreamingState({ isActive: false, content: '' });
+            setCurrentRun(null);
+            setRunElapsedMs(0);
         }
     }, [isLoading]);
 
@@ -110,6 +126,8 @@ export function useMarie(options: UseMarieOptions) {
         marieRef.current?.stopGeneration();
         setIsLoading(false);
         setStreamingState({ isActive: false, content: '' });
+        setCurrentRun(null);
+        setRunElapsedMs(0);
     }, []);
 
     const createSession = useCallback(async () => {
@@ -140,6 +158,7 @@ export function useMarie(options: UseMarieOptions) {
         streamingState,
         pendingApproval,
         currentRun,
+        runElapsedMs,
         sendMessage,
         stopGeneration,
         createSession,

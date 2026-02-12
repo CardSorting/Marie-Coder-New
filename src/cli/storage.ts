@@ -29,6 +29,7 @@ export interface MarieConfig {
     yoloProfile: 'demo_day' | 'balanced' | 'recovery';
     yoloAggression: number;
     yoloMaxRequiredActions: number;
+    autonomyMode: 'balanced' | 'high' | 'yolo';
 }
 
 const defaultConfig: MarieConfig = {
@@ -39,7 +40,8 @@ const defaultConfig: MarieConfig = {
     yoloEnabled: true,
     yoloProfile: 'balanced',
     yoloAggression: 1,
-    yoloMaxRequiredActions: 2
+    yoloMaxRequiredActions: 2,
+    autonomyMode: 'yolo'
 };
 
 export class Storage {
@@ -56,7 +58,19 @@ export class Storage {
         }
         try {
             const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
-            return { ...defaultConfig, ...JSON.parse(data) };
+            const parsed = JSON.parse(data);
+            const merged = { ...defaultConfig, ...parsed } as MarieConfig;
+
+            // Backward compatibility for older configs that predate autonomyMode.
+            if (!parsed.autonomyMode) {
+                if (parsed.requireApproval === false) {
+                    merged.autonomyMode = 'high';
+                } else {
+                    merged.autonomyMode = 'balanced';
+                }
+            }
+
+            return merged;
         } catch {
             return { ...defaultConfig };
         }

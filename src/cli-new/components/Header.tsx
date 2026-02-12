@@ -8,9 +8,18 @@ interface HeaderProps {
     sessionTitle: string;
     gitStatus?: GitStatus;
     isLoading: boolean;
+    elapsedMs?: number;
+    autonomyMode?: 'balanced' | 'high' | 'yolo';
 }
 
-export const Header: React.FC<HeaderProps> = ({ model, sessionTitle, gitStatus, isLoading }) => {
+function formatElapsed(ms: number): string {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+export const Header: React.FC<HeaderProps> = ({ model, sessionTitle, gitStatus, isLoading, elapsedMs = 0, autonomyMode = 'yolo' }) => {
     const formatModelName = (m: string) => {
         if (m.includes('claude')) return 'Claude';
         if (m.includes('gpt')) return 'GPT';
@@ -26,8 +35,9 @@ export const Header: React.FC<HeaderProps> = ({ model, sessionTitle, gitStatus, 
                 </Box>
                 <Box gap={2}>
                     {isLoading && (
-                        <Text color={marieTheme.colors.warning}>{marieTheme.icons.spinner} Thinking...</Text>
+                        <Text color={marieTheme.colors.warning}>{marieTheme.icons.spinner} Thinking... {formatElapsed(elapsedMs)}</Text>
                     )}
+                    <Text color={marieTheme.colors.muted}>Mode: {autonomyMode.toUpperCase()}</Text>
                     <Text color={marieTheme.colors.secondary}>{formatModelName(model)}</Text>
                 </Box>
             </Box>

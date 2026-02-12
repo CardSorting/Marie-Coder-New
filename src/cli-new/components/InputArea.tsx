@@ -17,6 +17,7 @@ const COMMANDS: CommandSuggestion[] = [
     { label: 'New Session', value: '/new', description: 'Create a new session', icon: '🆕' },
     { label: 'Sessions', value: '/sessions', description: 'Manage sessions', icon: '📋' },
     { label: 'Checkpoint', value: '/checkpoint', description: 'Create git checkpoint', icon: '◈' },
+    { label: 'Autonomy', value: '/autonomy', description: 'Set agent autonomy mode', icon: '🤖' },
     { label: 'Undo', value: '/undo', description: 'Rollback last changes', icon: '↩️' },
     { label: 'Exit', value: '/exit', description: 'Exit Marie', icon: '👋' },
 ];

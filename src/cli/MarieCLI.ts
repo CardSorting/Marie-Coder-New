@@ -265,6 +265,15 @@ export class MarieCLI {
         };
 
         const approvalRequester = async (name: string, input: any, diff?: { old: string, new: string }): Promise<boolean> => {
+            const config = Storage.getConfig();
+            const autonomyMode = config.autonomyMode
+                || (config.requireApproval === false ? 'high' : 'balanced');
+
+            // Full YOLO: bypass all approval gates.
+            if (autonomyMode === 'yolo') {
+                return true;
+            }
+
             return new Promise<boolean>((resolve) => {
                 const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 this.pendingApprovals.set(requestId, resolve);

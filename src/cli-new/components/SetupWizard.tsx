@@ -61,6 +61,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     const [model, setModel] = useState<string>('');
     const [customModelInput, setCustomModelInput] = useState<string>('');
     const [showKey, setShowKey] = useState(false);
+    const [autonomyMode, setAutonomyMode] = useState<'balanced' | 'high' | 'yolo'>('yolo');
     const [validationError, setValidationError] = useState<string>('');
     const [currentStepNum, setCurrentStepNum] = useState(0);
     const [showHelp, setShowHelp] = useState(false);
@@ -132,6 +133,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         const config: Record<string, string> = {
             aiProvider: provider,
             model: model,
+            autonomyMode,
         };
         if (provider === 'anthropic') {
             config.apiKey = apiKey;
@@ -145,7 +147,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         setTimeout(() => {
             onComplete();
         }, 2000);
-    }, [provider, apiKey, model, onComplete]);
+    }, [provider, apiKey, model, autonomyMode, onComplete]);
 
     const getApiKeyLabel = () => {
         switch (provider) {
@@ -376,7 +378,19 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                         <Text><Text bold>Provider:</Text> {provider}</Text>
                         <Text><Text bold>Model:</Text> {model}</Text>
                         <Text><Text bold>API Key:</Text> {apiKey ? '••••••••' + apiKey.slice(-4) : 'Not set'}</Text>
+                        <Text><Text bold>Autonomy:</Text> {autonomyMode.toUpperCase()}</Text>
                     </Box>
+                    <Box marginBottom={1}>
+                        <Text dimColor>Agent Autonomy:</Text>
+                    </Box>
+                    <SelectInput
+                        items={[
+                            { label: 'Balanced (ask before risky actions)', value: 'balanced' },
+                            { label: 'High (auto-approve most actions)', value: 'high' },
+                            { label: 'Full YOLO (auto-approve all actions)', value: 'yolo' },
+                        ]}
+                        onSelect={(item) => setAutonomyMode(item.value as 'balanced' | 'high' | 'yolo')}
+                    />
                     <Box marginTop={1}>
                         <Text>Is this correct?</Text>
                     </Box>

@@ -29,6 +29,7 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
         isLoading,
         streamingState,
         pendingApproval,
+        runElapsedMs,
         sendMessage,
         stopGeneration,
         createSession,
@@ -91,6 +92,13 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
                     // Show error
                 }
                 break;
+            case 'autonomy': {
+                const level = (args[0] || '').toLowerCase();
+                if (level === 'balanced' || level === 'high' || level === 'yolo') {
+                    Storage.saveConfig({ autonomyMode: level as 'balanced' | 'high' | 'yolo' });
+                }
+                break;
+            }
             case 'config':
                 setShowSetup(true);
                 break;
@@ -123,8 +131,10 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
         }
     });
 
-    // Get current model
-    const model = Storage.getConfig().model || 'claude-3-5-sonnet-20241022';
+    // Get current model + autonomy mode
+    const config = Storage.getConfig();
+    const model = config.model || 'claude-3-5-sonnet-20241022';
+    const autonomyMode = config.autonomyMode || (config.requireApproval === false ? 'high' : 'balanced');
 
     // Show setup wizard when requested
     if (showSetup) {
@@ -159,6 +169,8 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
                 sessionTitle={sessionTitle}
                 gitStatus={gitStatus || undefined}
                 isLoading={isLoading}
+                elapsedMs={runElapsedMs}
+                autonomyMode={autonomyMode}
             />
 
             {pendingApproval && (
@@ -179,7 +191,7 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
 
             <Box marginTop={1}>
                 <Text color={marieTheme.colors.muted} dimColor>
-                    Ctrl+C Cancel • Ctrl+S Sessions • Ctrl+N New • /config Settings • /help Commands
+                    Ctrl+C Cancel • Ctrl+S Sessions • Ctrl+N New • /autonomy [balanced|high|yolo] • /config Settings • /help Commands
                 </Text>
             </Box>
         </Box>
