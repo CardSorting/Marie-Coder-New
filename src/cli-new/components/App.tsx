@@ -11,6 +11,8 @@ import { useGit } from '../hooks/useGit.js';
 import { ViewMode } from '../types/cli.js';
 import { marieTheme } from '../styles/theme.js';
 import { Storage } from '../../cli/storage.js';
+import { SetupWizard } from './SetupWizard.js';
+import { Banner } from './Banner.js';
 
 interface AppProps {
     workingDir: string;
@@ -19,6 +21,7 @@ interface AppProps {
 export const App: React.FC<AppProps> = ({ workingDir }) => {
     const { exit } = useApp();
     const [viewMode, setViewMode] = useState<ViewMode>('chat');
+    const [showSetup, setShowSetup] = useState(false);
 
     // Core hooks
     const {
@@ -88,6 +91,9 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
                     // Show error
                 }
                 break;
+            case 'config':
+                setShowSetup(true);
+                break;
             default:
                 // Unknown command
                 break;
@@ -119,6 +125,11 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
 
     // Get current model
     const model = Storage.getConfig().model || 'claude-3-5-sonnet-20241022';
+
+    // Show setup wizard when requested
+    if (showSetup) {
+        return React.createElement(SetupWizard, { onComplete: () => setShowSetup(false) });
+    }
 
     if (viewMode === 'sessions') {
         return (
@@ -154,6 +165,8 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
                 <ApprovalDialog request={pendingApproval} />
             )}
 
+            {messages.length === 0 && !isLoading && <Banner />}
+
             <ChatArea
                 messages={messages}
                 streamingState={streamingState}
@@ -166,7 +179,7 @@ export const App: React.FC<AppProps> = ({ workingDir }) => {
 
             <Box marginTop={1}>
                 <Text color={marieTheme.colors.muted} dimColor>
-                    Ctrl+C Cancel • Ctrl+S Sessions • Ctrl+N New • /help Commands
+                    Ctrl+C Cancel • Ctrl+S Sessions • Ctrl+N New • /config Settings • /help Commands
                 </Text>
             </Box>
         </Box>

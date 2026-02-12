@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-import React from 'react';
+import React, { useState } from 'react';
 import { render } from 'ink';
 import { App } from './components/App.js';
+import { SetupWizard } from './components/SetupWizard.js';
+import { Storage } from '../cli/storage.js';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -15,30 +17,25 @@ if (!fs.existsSync(MARIE_DIR)) {
 // Get working directory
 const workingDir = process.cwd();
 
-// Check for API key
-const apiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENROUTER_API_KEY || process.env.CEREBRAS_API_KEY;
+// Check for API key in environment or config
+const envApiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENROUTER_API_KEY || process.env.CEREBRAS_API_KEY;
+const config = Storage.getConfig();
+const hasConfigKey = config.apiKey || config.openrouterApiKey || config.cerebrasApiKey;
+const needsSetup = !envApiKey && !hasConfigKey;
 
-if (!apiKey) {
-    console.error(`
-╔═══════════════════════════════════════════════════════════╗
-║  🌸 Marie CLI - API Key Required                          ║
-╠═══════════════════════════════════════════════════════════╣
-║                                                           ║
-║  Please set one of the following environment variables:   ║
-║                                                           ║
-║    • ANTHROPIC_API_KEY    (for Claude models)             ║
-║    • OPENROUTER_API_KEY   (for OpenRouter access)         ║
-║    • CEREBRAS_API_KEY     (for Cerebras models)           ║
-║                                                           ║
-║  Or configure via: ~/.marie/config.json                   ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-`);
-    process.exit(1);
-}
+// Main app component that handles setup
+const MainApp: React.FC = () => {
+    const [setupComplete, setSetupComplete] = useState(!needsSetup);
+
+    if (!setupComplete) {
+        return React.createElement(SetupWizard, { onComplete: () => setSetupComplete(true) });
+    }
+
+    return React.createElement(App, { workingDir });
+};
 
 // Render the app
-const { waitUntilExit } = render(React.createElement(App, { workingDir }));
+const { waitUntilExit } = render(React.createElement(MainApp));
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
