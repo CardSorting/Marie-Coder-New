@@ -35,7 +35,7 @@ export async function checkCodeHealth(path: string): Promise<HealthReport> {
         const anys = (content.match(anyRegex) || []).length;
         const consoleLogs = (content.match(/console\.log/g) || []).length;
 
-        const blockComments = (content.match(/\/\*[\s\S]*?\*\//g) || []).filter(c => c.split('\n').length > 2).length;
+        const blockComments = (content.match(/\/\*[\s\S]*?\*\//g) || [] as string[]).filter((c: string) => c.split('\n').length > 2).length;
 
         let maxDepth = 0;
         lines.forEach(line => {
@@ -62,8 +62,8 @@ export async function checkCodeHealth(path: string): Promise<HealthReport> {
         else if (filePath.includes('/infrastructure/')) zoningHealth.currentZone = 'infrastructure';
         else if (filePath.includes('/plumbing/')) zoningHealth.currentZone = 'plumbing';
 
-        const imports = content.match(/import\s+.*\s+from\s+['"](.*)['"]*/g) || [];
-        imports.forEach(imp => {
+        const imports = content.match(/import\s+.*\s+from\s+['"](.*)['"]*/g) || [] as string[];
+        imports.forEach((imp: string) => {
             const match = imp.match(/from\s+['"](.*)['"]/);
             if (!match) return;
             const importPath = match[1].toLowerCase();

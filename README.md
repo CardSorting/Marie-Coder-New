@@ -30,8 +30,6 @@ Or configure via the config file at `~/.marie/config.json`:
 
 ```bash
 npm start
-# or
-./dist/cli-standalone/index.js
 # or after global install
 marie
 ```
