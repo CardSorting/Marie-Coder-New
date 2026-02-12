@@ -10,76 +10,168 @@ interface SetupWizardProps {
     onComplete: () => void;
 }
 
-type SetupStep = 'provider' | 'apikey' | 'model' | 'customModel' | 'complete';
+type SetupStep = 'welcome' | 'quickstart' | 'provider' | 'apikey' | 'model' | 'customModel' | 'review' | 'complete';
+
+const TOTAL_STEPS = 5;
+
+// Quick start presets
+const presets = [
+    {
+        label: '⚡ Quick Start - Claude 3.5 Sonnet (Recommended)',
+        value: 'claude-sonnet',
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-20241022',
+        description: 'Best for coding tasks'
+    },
+    {
+        label: '⚡ Quick Start - GPT-4o via OpenRouter',
+        value: 'gpt4o',
+        provider: 'openrouter',
+        model: 'openai/gpt-4o',
+        description: 'Access to GPT-4o'
+    },
+    {
+        label: '✏️  Custom Configuration',
+        value: 'custom',
+        provider: '',
+        model: '',
+        description: 'Choose your own provider and model'
+    },
+];
 
 const providers = [
-    { label: 'Anthropic (Claude)', value: 'anthropic' },
-    { label: 'OpenRouter (Multiple models)', value: 'openrouter' },
-    { label: 'Cerebras', value: 'cerebras' },
+    { label: '◈ Anthropic (Claude) - Best for coding', value: 'anthropic', description: 'Claude models, excellent code understanding' },
+    { label: '◈ OpenRouter - Multi-provider access', value: 'openrouter', description: 'Access GPT, Claude, and more' },
+    { label: '◈ Cerebras - Ultra-fast inference', value: 'cerebras', description: 'Llama models with fast response times' },
 ];
 
-// Just a few popular examples - users can enter any model
-const anthropicExamples = [
-    { label: 'Claude 3.5 Sonnet (Recommended)', value: 'claude-3-5-sonnet-20241022' },
-    { label: 'Claude 3.5 Haiku (Fast)', value: 'claude-3-5-haiku-20241022' },
-    { label: 'Claude 3 Opus (Powerful)', value: 'claude-3-opus-20240229' },
-    { label: '✏️  Enter custom model ID...', value: 'custom' },
+const anthropicModels = [
+    { label: '★ Claude 3.5 Sonnet (Recommended)', value: 'claude-3-5-sonnet-20241022', description: 'Best balance of speed and capability' },
+    { label: '○ Claude 3.5 Haiku (Fastest)', value: 'claude-3-5-haiku-20241022', description: 'Quick responses for simple tasks' },
+    { label: '○ Claude 3 Opus (Most capable)', value: 'claude-3-opus-20240229', description: 'Maximum reasoning capability' },
+    { label: '✏️  Enter custom model ID...', value: 'custom', description: 'Use latest or experimental models' },
 ];
 
-const openrouterExamples = [
-    { label: 'Claude 3.5 Sonnet', value: 'anthropic/claude-3.5-sonnet' },
-    { label: 'GPT-4o', value: 'openai/gpt-4o' },
-    { label: 'GPT-4o Mini', value: 'openai/gpt-4o-mini' },
-    { label: '✏️  Enter custom model ID...', value: 'custom' },
+const openrouterModels = [
+    { label: '★ Claude 3.5 Sonnet', value: 'anthropic/claude-3.5-sonnet', description: 'Via OpenRouter' },
+    { label: '○ GPT-4o', value: 'openai/gpt-4o', description: 'Latest GPT-4 optimized' },
+    { label: '○ GPT-4o Mini', value: 'openai/gpt-4o-mini', description: 'Fast and cost-effective' },
+    { label: '✏️  Enter custom model ID...', value: 'custom', description: 'Any model available on OpenRouter' },
 ];
 
-const cerebrasExamples = [
-    { label: 'Llama 3.1 8B', value: 'llama3.1-8b' },
-    { label: 'Llama 3.1 70B', value: 'llama3.1-70b' },
-    { label: '✏️  Enter custom model ID...', value: 'custom' },
+const cerebrasModels = [
+    { label: '★ Llama 3.1 8B', value: 'llama3.1-8b', description: 'Fast and efficient' },
+    { label: '○ Llama 3.1 70B', value: 'llama3.1-70b', description: 'More capable' },
+    { label: '✏️  Enter custom model ID...', value: 'custom', description: 'Custom Cerebras model' },
 ];
+
+function validateApiKey(key: string, provider: string): { valid: boolean; message?: string } {
+    if (!key || key.length < 10) {
+        return { valid: false, message: 'API key is too short (min 10 characters)' };
+    }
+    if (provider === 'anthropic' && !key.startsWith('sk-ant')) {
+        return { valid: true }; // Allow various Anthropic key formats
+    }
+    if (provider === 'openrouter' && !key.startsWith('sk-or')) {
+        return { valid: true }; // Allow various OpenRouter key formats
+    }
+    return { valid: true };
+}
 
 export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     const { exit } = useApp();
-    const [step, setStep] = useState<SetupStep>('provider');
-    const [provider, setProvider] = useState<string>('anthropic');
+    const [step, setStep] = useState<SetupStep>('welcome');
+    const [provider, setProvider] = useState<string>('');
     const [apiKey, setApiKey] = useState<string>('');
     const [model, setModel] = useState<string>('');
     const [customModelInput, setCustomModelInput] = useState<string>('');
     const [showKey, setShowKey] = useState(false);
+    const [validationError, setValidationError] = useState<string>('');
+    const [currentStepNum, setCurrentStepNum] = useState(0);
+    const [showHelp, setShowHelp] = useState(false);
 
-    const handleProviderSelect = useCallback((item: { value: string }) => {
+    const goBack = useCallback(() => {
+        setValidationError('');
+        setShowHelp(false);
+        if (step === 'quickstart') {
+            setStep('welcome');
+            setCurrentStepNum(0);
+        } else if (step === 'provider') {
+            setStep('quickstart');
+            setCurrentStepNum(1);
+        } else if (step === 'apikey') {
+            setStep('provider');
+            setCurrentStepNum(2);
+        } else if (step === 'model') {
+            setStep('apikey');
+            setCurrentStepNum(3);
+        } else if (step === 'customModel') {
+            setStep('model');
+            setCurrentStepNum(4);
+        } else if (step === 'review') {
+            setStep('model');
+            setCurrentStepNum(4);
+        }
+    }, [step]);
+
+    const handlePresetSelect = useCallback((item: typeof presets[0]) => {
+        if (item.value === 'custom') {
+            setStep('provider');
+            setCurrentStepNum(2);
+        } else {
+            setProvider(item.provider);
+            setModel(item.model);
+            setStep('apikey');
+            setCurrentStepNum(3);
+        }
+    }, []);
+
+    const handleProviderSelect = useCallback((item: typeof providers[0]) => {
         setProvider(item.value);
         setStep('apikey');
+        setCurrentStepNum(3);
     }, []);
 
     const handleApiKeySubmit = useCallback((value: string) => {
-        if (value.trim()) {
-            setApiKey(value.trim());
-            setStep('model');
+        const trimmed = value.trim();
+        const validation = validateApiKey(trimmed, provider);
+        if (!validation.valid) {
+            setValidationError(validation.message || 'Invalid API key');
+            return;
         }
-    }, []);
+        setApiKey(trimmed);
+        setValidationError('');
+        if (model && provider) {
+            setStep('review');
+            setCurrentStepNum(5);
+        } else {
+            setStep('model');
+            setCurrentStepNum(4);
+        }
+    }, [provider, model]);
 
-    const handleModelSelect = useCallback((item: { value: string; label: string }) => {
+    const handleModelSelect = useCallback((item: typeof anthropicModels[0]) => {
         if (item.value === 'custom') {
             setStep('customModel');
         } else {
-            saveConfig(item.value);
+            setModel(item.value);
+            setStep('review');
+            setCurrentStepNum(5);
         }
-    }, [provider, apiKey, onComplete]);
+    }, []);
 
     const handleCustomModelSubmit = useCallback((value: string) => {
         if (value.trim()) {
-            saveConfig(value.trim());
+            setModel(value.trim());
+            setStep('review');
+            setCurrentStepNum(5);
         }
-    }, [provider, apiKey, onComplete]);
+    }, []);
 
-    const saveConfig = useCallback((selectedModel: string) => {
-        setModel(selectedModel);
-        // Save configuration
+    const saveConfig = useCallback(() => {
         const config: Record<string, string> = {
             aiProvider: provider,
-            model: selectedModel,
+            model: model,
         };
         if (provider === 'anthropic') {
             config.apiKey = apiKey;
@@ -90,46 +182,34 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         }
         Storage.saveConfig(config);
         setStep('complete');
-        // Give user time to see the completion message
         setTimeout(() => {
             onComplete();
         }, 2000);
-    }, [provider, apiKey, onComplete]);
+    }, [provider, apiKey, model, onComplete]);
 
     const getApiKeyLabel = () => {
         switch (provider) {
-            case 'anthropic':
-                return 'Anthropic API Key';
-            case 'openrouter':
-                return 'OpenRouter API Key';
-            case 'cerebras':
-                return 'Cerebras API Key';
-            default:
-                return 'API Key';
+            case 'anthropic': return 'Anthropic API Key';
+            case 'openrouter': return 'OpenRouter API Key';
+            case 'cerebras': return 'Cerebras API Key';
+            default: return 'API Key';
         }
     };
 
     const getApiKeyHelp = () => {
         switch (provider) {
-            case 'anthropic':
-                return 'Get your key at: console.anthropic.com';
-            case 'openrouter':
-                return 'Get your key at: openrouter.com/keys';
-            case 'cerebras':
-                return 'Get your key at: cloud.cerebras.ai';
-            default:
-                return '';
+            case 'anthropic': return 'console.anthropic.com/settings/keys';
+            case 'openrouter': return 'openrouter.com/keys';
+            case 'cerebras': return 'cloud.cerebras.ai';
+            default: return '';
         }
     };
 
     const getModels = () => {
         switch (provider) {
-            case 'openrouter':
-                return openrouterExamples;
-            case 'cerebras':
-                return cerebrasExamples;
-            default:
-                return anthropicExamples;
+            case 'openrouter': return openrouterModels;
+            case 'cerebras': return cerebrasModels;
+            default: return anthropicModels;
         }
     };
 
@@ -140,127 +220,257 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         if (key.escape) {
             exit();
         }
+        if (key.leftArrow && step !== 'welcome' && step !== 'complete') {
+            goBack();
+        }
+        if (input === '?' && step !== 'welcome' && step !== 'complete') {
+            setShowHelp(!showHelp);
+        }
     });
+
+    const progressBar = currentStepNum > 0 ? `[${'█'.repeat(currentStepNum)}${'░'.repeat(TOTAL_STEPS - currentStepNum)}]` : '';
+
+    const HelpBox = () => (
+        <Box flexDirection="column" marginTop={1} padding={1} borderStyle="single" borderColor={marieTheme.colors.info}>
+            <Text color={marieTheme.colors.info} bold>Keyboard Shortcuts:</Text>
+            <Text dimColor>• Enter/Return - Confirm selection</Text>
+            <Text dimColor>• ↑/↓ - Navigate options</Text>
+            <Text dimColor>• ← - Go back to previous step</Text>
+            <Text dimColor>• Tab - Show/hide API key</Text>
+            <Text dimColor>• ? - Toggle this help</Text>
+            <Text dimColor>• Esc - Exit setup</Text>
+        </Box>
+    );
 
     return (
         <Box flexDirection="column" padding={1}>
             <Banner />
-            <Box marginBottom={1}>
-                <Text color={marieTheme.colors.primary} bold>
-                    🌸 Initial Setup
-                </Text>
-            </Box>
+
+            {step !== 'welcome' && step !== 'complete' && (
+                <Box marginBottom={1} justifyContent="space-between">
+                    <Text color={marieTheme.colors.muted}>
+                        Step {currentStepNum} of {TOTAL_STEPS} {progressBar}
+                    </Text>
+                    <Text color={marieTheme.colors.muted} dimColor>
+                        Press ? for help
+                    </Text>
+                </Box>
+            )}
+
+            {step === 'welcome' && (
+                <>
+                    <Box marginBottom={1}>
+                        <Text color={marieTheme.colors.primary} bold>
+                            🌸 Welcome to Marie CLI
+                        </Text>
+                    </Box>
+                    <Box marginBottom={1}>
+                        <Text>
+                            Your AI coding assistant is ready to set up.
+                        </Text>
+                    </Box>
+                    <Box marginBottom={1}>
+                        <Text dimColor>
+                            Choose how you'd like to configure Marie:
+                        </Text>
+                    </Box>
+                    <Box marginTop={1}>
+                        <Text color={marieTheme.colors.secondary}>
+                            Press Enter to continue →
+                        </Text>
+                    </Box>
+                    <Box marginTop={1}>
+                        <Text dimColor>
+                            (Press Esc to quit, ? for help)
+                        </Text>
+                    </Box>
+                </>
+            )}
+
+            {step === 'quickstart' && (
+                <>
+                    <Box marginBottom={1}>
+                        <Text bold>Step 1: Choose your setup method</Text>
+                    </Box>
+                    <SelectInput
+                        items={presets.map(p => ({ label: p.label, value: p.value }))}
+                        onSelect={(item) => {
+                            const preset = presets.find(p => p.value === item.value)!;
+                            handlePresetSelect(preset);
+                        }}
+                    />
+                    <Box marginTop={1}>
+                        <Text dimColor>
+                            Quick start uses recommended settings for most users
+                        </Text>
+                    </Box>
+                    {showHelp && <HelpBox />}
+                </>
+            )}
 
             {step === 'provider' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Select your AI provider:</Text>
+                        <Text bold>Step 2: Choose your AI provider</Text>
                     </Box>
                     <SelectInput
-                        items={providers}
-                        onSelect={handleProviderSelect}
+                        items={providers.map(p => ({ label: p.label, value: p.value }))}
+                        onSelect={(item) => {
+                            const prov = providers.find(p => p.value === item.value)!;
+                            handleProviderSelect(prov);
+                        }}
                     />
                     <Box marginTop={1}>
                         <Text dimColor>
-                            This determines which API to use for AI requests.
+                            Tip: Anthropic (Claude) is recommended for coding tasks
                         </Text>
                     </Box>
+                    {showHelp && <HelpBox />}
                 </>
             )}
 
             {step === 'apikey' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Enter your {getApiKeyLabel()}:</Text>
+                        <Text bold>Step 3: Enter your {getApiKeyLabel()}</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
-                            {getApiKeyHelp()}
+                            Get your API key from: {getApiKeyHelp()}
                         </Text>
                     </Box>
+                    {validationError && (
+                        <Box marginBottom={1}>
+                            <Text color={marieTheme.colors.error}>
+                                ⚠️  {validationError}
+                            </Text>
+                        </Box>
+                    )}
                     <Box>
                         <TextInput
                             value={apiKey}
-                            onChange={setApiKey}
+                            onChange={(val) => { setApiKey(val); setValidationError(''); }}
                             onSubmit={handleApiKeySubmit}
                             mask={showKey ? undefined : '*'}
-                            placeholder="sk-..."
+                            placeholder="Paste your API key here..."
                         />
                     </Box>
                     <Box marginTop={1}>
                         <Text dimColor>
-                            Press Tab to {showKey ? 'hide' : 'show'} • Enter to continue • Esc to quit
+                            Tab to {showKey ? 'hide' : 'show'} • Enter to continue • ← Back • ? Help • Esc Quit
                         </Text>
                     </Box>
+                    {showHelp && <HelpBox />}
                 </>
             )}
 
             {step === 'model' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Select your model (or enter custom):</Text>
+                        <Text bold>Step 4: Select your model</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
-                            Popular options for {provider}:
+                            Choose a model for {provider}:
                         </Text>
                     </Box>
                     <SelectInput
-                        items={getModels()}
+                        items={getModels().map(m => ({ label: m.label, value: m.value }))}
                         onSelect={handleModelSelect}
                     />
                     <Box marginTop={1}>
                         <Text dimColor>
-                            Models change frequently. Choose "Enter custom" for latest models.
+                            ★ Recommended • ○ Alternative • ✏️ Custom
                         </Text>
                     </Box>
+                    {showHelp && <HelpBox />}
                 </>
             )}
 
             {step === 'customModel' && (
                 <>
                     <Box marginBottom={1}>
-                        <Text bold>Enter the model ID:</Text>
+                        <Text bold>Step 4: Enter custom model ID</Text>
                     </Box>
                     <Box marginBottom={1}>
                         <Text dimColor>
-                            Example: claude-3-opus-20240229, gpt-4-turbo, etc.
+                            Enter the exact model identifier from your provider's documentation.
                         </Text>
+                    </Box>
+                    <Box marginBottom={1} flexDirection="column">
+                        <Text color={marieTheme.colors.info}>Examples:</Text>
+                        <Text dimColor>  • claude-3-opus-20240229</Text>
+                        <Text dimColor>  • gpt-4-turbo-preview</Text>
+                        <Text dimColor>  • anthropic/claude-3.5-sonnet</Text>
                     </Box>
                     <Box>
                         <TextInput
                             value={customModelInput}
                             onChange={setCustomModelInput}
                             onSubmit={handleCustomModelSubmit}
-                            placeholder="model-name"
+                            placeholder="model-identifier"
                         />
                     </Box>
                     <Box marginTop={1}>
                         <Text dimColor>
-                            Enter the exact model identifier from your provider's docs
+                            Enter to confirm • ← Back • ? Help • Esc Quit
                         </Text>
                     </Box>
+                    {showHelp && <HelpBox />}
+                </>
+            )}
+
+            {step === 'review' && (
+                <>
+                    <Box marginBottom={1}>
+                        <Text bold>Step 5: Review your settings</Text>
+                    </Box>
+                    <Box flexDirection="column" marginY={1} padding={1} borderStyle="round" borderColor={marieTheme.colors.secondary}>
+                        <Text><Text bold>Provider:</Text> {provider}</Text>
+                        <Text><Text bold>Model:</Text> {model}</Text>
+                        <Text><Text bold>API Key:</Text> {apiKey ? '••••••••' + apiKey.slice(-4) : 'Not set'}</Text>
+                    </Box>
+                    <Box marginTop={1}>
+                        <Text>Is this correct?</Text>
+                    </Box>
+                    <SelectInput
+                        items={[
+                            { label: '✅ Yes, save and continue', value: 'save' },
+                            { label: '✏️  No, go back and edit', value: 'back' },
+                        ]}
+                        onSelect={(item) => {
+                            if (item.value === 'save') {
+                                saveConfig();
+                            } else {
+                                goBack();
+                            }
+                        }}
+                    />
+                    {showHelp && <HelpBox />}
                 </>
             )}
 
             {step === 'complete' && (
-                <Box flexDirection="column">
-                    <Text color={marieTheme.colors.success}>
-                        ✅ Configuration saved!
+                <Box flexDirection="column" alignItems="center">
+                    <Text color={marieTheme.colors.success} bold>
+                        ✅ Setup Complete!
                     </Text>
-                    <Box marginTop={1}>
+                    <Box marginTop={1} flexDirection="column" alignItems="center">
                         <Text>
-                            Provider: <Text bold>{provider}</Text>
+                            Provider: <Text bold color={marieTheme.colors.primary}>{provider}</Text>
                         </Text>
-                    </Box>
-                    <Box>
                         <Text>
-                            Model: <Text bold>{model}</Text>
+                            Model: <Text bold color={marieTheme.colors.primary}>{model}</Text>
                         </Text>
                     </Box>
                     <Box marginTop={1}>
                         <Text dimColor>
-                            Starting Marie...
+                            Settings saved to ~/.marie/config.json
+                        </Text>
+                    </Box>
+                    <Box marginTop={2}>
+                        <Text color={marieTheme.colors.secondary}>
+                            Starting Marie CLI...
                         </Text>
                     </Box>
                 </Box>
