@@ -64,6 +64,7 @@ export class OpenRouterProvider implements AIProvider {
     }
 
     async createMessage(params: AIRequestParams): Promise<AIResponse> {
+        const translatedModel = this.translateModelName(params.model);
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
             method: "POST",
             headers: {
@@ -74,7 +75,7 @@ export class OpenRouterProvider implements AIProvider {
                 "Accept": "application/json"
             },
             body: JSON.stringify({
-                model: params.model,
+                model: translatedModel,
                 messages: this.getOpenAiMessages(params),
                 tools: this.getOpenAiTools(params),
                 max_tokens: params.max_tokens || 1024,
@@ -82,10 +83,10 @@ export class OpenRouterProvider implements AIProvider {
         });
 
         if (!response.ok) {
-            let errorMsg = `OpenRouter API error: ${response.status} ${response.statusText}`;
+            let errorMsg = `OpenRouter API error: ${response.status} ${response.statusText} (model: ${translatedModel})`;
             try {
                 const errorJson = await response.json() as any;
-                if (errorJson.error?.message) errorMsg = `OpenRouter API error: ${errorJson.error.message}`;
+                if (errorJson.error?.message) errorMsg = `OpenRouter API error: ${errorJson.error.message} (model: ${translatedModel})`;
             } catch (e) {
                 const text = await response.text().catch(() => "");
                 if (text) errorMsg += ` - ${text}`;
@@ -141,6 +142,7 @@ export class OpenRouterProvider implements AIProvider {
         if (signal) signal.addEventListener('abort', onAbort);
 
         try {
+            const translatedModel = this.translateModelName(params.model);
             const response = await fetch(`${this.baseUrl}/chat/completions`, {
                 method: "POST",
                 headers: {
@@ -153,7 +155,7 @@ export class OpenRouterProvider implements AIProvider {
                     "Connection": "keep-alive"
                 },
                 body: JSON.stringify({
-                    model: params.model,
+                    model: translatedModel,
                     messages: this.getOpenAiMessages(params),
                     tools: this.getOpenAiTools(params),
                     max_tokens: params.max_tokens || 1024,
@@ -164,7 +166,7 @@ export class OpenRouterProvider implements AIProvider {
             });
 
             if (!response.ok) {
-                throw new Error(`OpenRouter API error: ${response.status}`);
+                throw new Error(`OpenRouter API error: ${response.status} (model: ${translatedModel})`);
             }
 
             if (!response.body) throw new Error("OpenRouter API returned no body.");
@@ -308,6 +310,61 @@ export class OpenRouterProvider implements AIProvider {
             clearTimeout(timeoutId);
             if (signal) signal.removeEventListener('abort', onAbort);
         }
+    }
+
+    /**
+     * Translates Anthropic model names to OpenRouter format.
+     * OpenRouter expects format like "anthropic/claude-3.5-sonnet"
+     */
+    private translateModelName(model: string): string {
+        const normalized = (model || "").trim();
+
+        if (!normalized) {
+            return "anthropic/claude-3.5-sonnet";
+        }
+
+        // If already in OpenRouter format, return as-is
+        if (normalized.includes('/')) {
+            return normalized;
+        }
+
+        // Map Anthropic model names to OpenRouter format
+        const modelMap: Record<string, string> = {
+            'claude-3-5-sonnet-20241022': 'anthropic/claude-3.5-sonnet',
+            'claude-3-5-sonnet': 'anthropic/claude-3.5-sonnet',
+            'claude-3-5-haiku-20241022': 'anthropic/claude-3.5-haiku',
+            'claude-3-5-haiku': 'anthropic/claude-3.5-haiku',
+            'claude-3-opus-20240229': 'anthropic/claude-3-opus',
+            'claude-3-opus': 'anthropic/claude-3-opus',
+            'claude-3-sonnet-20240229': 'anthropic/claude-3-sonnet',
+            'claude-3-sonnet': 'anthropic/claude-3-sonnet',
+            'claude-3-haiku-20240307': 'anthropic/claude-3-haiku',
+            'claude-3-haiku': 'anthropic/claude-3-haiku',
+        };
+
+        if (modelMap[normalized]) {
+            return modelMap[normalized];
+        }
+
+        // Try to convert claude models that aren't in the map.
+        // Examples:
+        // - claude-3-5-sonnet-20241022 => anthropic/claude-3.5-sonnet
+        // - claude-3-7-sonnet => anthropic/claude-3.7-sonnet
+        if (normalized.startsWith('claude-')) {
+            const withoutDateSuffix = normalized.replace(/-20\d{6}$/, '');
+            const claudeVersioned = withoutDateSuffix.match(/^claude-(\d+)-(\d+)(-.+)$/);
+            if (claudeVersioned) {
+                const major = claudeVersioned[1];
+                const minor = claudeVersioned[2];
+                const variant = claudeVersioned[3];
+                return `anthropic/claude-${major}.${minor}${variant}`;
+            }
+
+            return `anthropic/${withoutDateSuffix}`;
+        }
+
+        // Return as-is if we can't translate
+        return normalized;
     }
 
     private getOpenAiMessages(params: AIRequestParams): OpenRouterMessage[] {

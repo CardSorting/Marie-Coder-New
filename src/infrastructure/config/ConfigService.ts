@@ -2,17 +2,34 @@
 // Works in both VSCode extension and CLI environments
 
 import type * as vscodeTypes from 'vscode';
+import { createRequire } from 'module';
+
+const nodeRequire = createRequire(import.meta.url);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let vscodeModule: typeof vscodeTypes | null = null;
 let hasAttemptedVscodeLoad = false;
 
+function isLikelyVscodeExtensionHost(): boolean {
+    return Boolean(
+        process.env.VSCODE_IPC_HOOK ||
+        process.env.VSCODE_PID ||
+        process.env.VSCODE_CWD
+    );
+}
+
 function getVscode(): typeof vscodeTypes | null {
+    // In CLI runtime, a local vscode shim may be resolvable as "vscode".
+    // Only treat vscode as available when running inside VS Code extension host.
+    if (!isLikelyVscodeExtensionHost()) {
+        return null;
+    }
+
     if (!hasAttemptedVscodeLoad) {
         hasAttemptedVscodeLoad = true;
         try {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            vscodeModule = require('vscode') as typeof vscodeTypes;
+            vscodeModule = nodeRequire('vscode') as typeof vscodeTypes;
         } catch {
             // VSCode not available - we're in CLI mode
             vscodeModule = null;
@@ -21,22 +38,17 @@ function getVscode(): typeof vscodeTypes | null {
     return vscodeModule;
 }
 
-// CLI config cache (loaded from Storage)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cliConfig: any = null;
-
 function getCliConfig(): Record<string, unknown> {
-    if (!cliConfig) {
-        try {
-            // Dynamic require to avoid issues in VSCode environment
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const { Storage } = require('../../cli/storage.js');
-            cliConfig = Storage.getConfig();
-        } catch {
-            cliConfig = {};
-        }
+    try {
+        // Dynamic require to avoid issues in VSCode environment.
+        // Intentionally re-read config on each call so runtime updates
+        // (e.g. setup wizard /config changes) are picked up immediately.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { Storage } = nodeRequire('../../cli/storage.js');
+        return Storage.getConfig() || {};
+    } catch {
+        return {};
     }
-    return cliConfig || {};
 }
 
 interface ConfigProvider {

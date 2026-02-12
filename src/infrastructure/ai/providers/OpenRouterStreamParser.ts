@@ -14,6 +14,26 @@ export class OpenRouterStreamParser {
         this.tagDetector = new StreamTagDetector();
     }
 
+    private stripToolWrapperTags(text: string): string {
+        if (!text) return "";
+        return text
+            .replace(/<\|tool_calls_section_begin\|>/g, '')
+            .replace(/<\|tool_calls_section_end\|>/g, '')
+            .replace(/<\|tool_call_begin\|>/g, '')
+            .replace(/<\|tool_call_end\|>/g, '')
+            .replace(/<\|tool_call_argument_begin\|>/g, '')
+            .replace(/<\|tool_call_arguments_begin\|>/g, '')
+            .replace(/<tool_call>/g, '')
+            .replace(/<\/tool_call>/g, '')
+            .replace(/<tool>/g, '')
+            .replace(/<\/tool>/g, '')
+            .replace(/<function\b[^>]*>/g, '')
+            .replace(/<\/function>/g, '')
+            .replace(/<function_calls>/g, '')
+            .replace(/<\/function_calls>/g, '')
+            .trim();
+    }
+
     public processContent(chunk: string): AIStreamEvent[] {
         const events: AIStreamEvent[] = [];
         let currentChunk = chunk;
@@ -50,11 +70,11 @@ export class OpenRouterStreamParser {
 
                 // --- 2b. Tool Transitions ---
                 // Tightened: Avoid matching loose word-tags like <Plan> or <Thought>
-                const isExplicitToolTag = tag === '<tool>' || tag === '<|tool_call_begin|>' || tag === '<|tool_calls_section_begin|>' || tag === '<function_calls>' || tag === '<invoke' || tag === '<tool_code>' || tag === '<tool_call>';
+                const isExplicitToolTag = tag === '<tool>' || tag === '<|tool_call_begin|>' || tag === '<|tool_calls_section_begin|>' || tag === '<function_calls>' || tag.startsWith('<function') || tag === '<invoke' || tag === '<tool_code>' || tag === '<tool_call>';
                 const isDynamicToolTag = /<\|(?!.*_end)[\w_]{3,}\|>/.test(tag) || /^call:\d+>$/.test(tag);
                 const isStartTag = isExplicitToolTag || isDynamicToolTag;
 
-                const isEndTag = tag === '</tool>' || tag === '<|tool_call_end|>' || tag === '<|tool_calls_section_end|>' || tag === '</invoke>' || tag === '</function_calls>' || tag === '</tool_code>' || tag === '</tool_call>' || tag === '</call>';
+                const isEndTag = tag === '</tool>' || tag === '<|tool_call_end|>' || tag === '<|tool_calls_section_end|>' || tag === '</invoke>' || tag === '</function>' || tag === '</function_calls>' || tag === '</tool_code>' || tag === '</tool_call>' || tag === '</call>';
 
                 if (isEndTag) {
                     this.llamaBufferParts.push(tag);
@@ -95,12 +115,17 @@ export class OpenRouterStreamParser {
                             this.indexCount++;
                             this.llamaToolMode = false; // Successfully extracted
                         } else {
-                            // Extraction failed - emit as content so nothing is lost
-                            console.warn('[Marie] Tool extraction failed, emitting as content');
-                            events.push({ type: "content_delta", text: bufferContent });
+                            // Extraction failed. Do NOT leak raw tool wrapper tags to user-visible output.
+                            // Try to salvage only non-wrapper text.
+                            const cleaned = this.stripToolWrapperTags(bufferContent);
+                            if (cleaned) {
+                                console.warn('[Marie] Tool extraction failed, emitting cleaned fallback content');
+                                events.push({ type: "content_delta", text: cleaned });
+                            }
                         }
                     }
 
+                    this.llamaToolMode = false;
                     this.llamaBufferParts = [];
                 } else if (isStartTag) {
                     this.llamaToolMode = true;
@@ -184,11 +209,12 @@ export class OpenRouterStreamParser {
             // we MUST flush the swallowed text as content so the user doesn't lose it.
             // BUT only if we haven't already processed this content!
             const llamaBuffer = this.llamaBufferParts.join('');
-            if (llamaBuffer.trim() && llamaBuffer !== bufferContent) {
-                events.push({ type: "content_delta", text: llamaBuffer });
-            } else if (llamaBuffer.trim() && this.llamaToolMode) {
+            const cleaned = this.stripToolWrapperTags(llamaBuffer);
+            if (cleaned && llamaBuffer !== bufferContent) {
+                events.push({ type: "content_delta", text: cleaned });
+            } else if (cleaned && this.llamaToolMode) {
                 // Only emit if we were actually in tool mode (content was being swallowed)
-                events.push({ type: "content_delta", text: llamaBuffer });
+                events.push({ type: "content_delta", text: cleaned });
             }
         }
 

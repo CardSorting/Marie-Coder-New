@@ -17,6 +17,8 @@ export class StreamTagDetector {
         "<|tool_call_arguments_begin|>", // Plural variant
         "<tool>",
         "</tool>",
+        "<function",
+        "</function>",
         "<function_calls>",
         "</function_calls>",
         "<invoke",
@@ -76,9 +78,12 @@ export class StreamTagDetector {
         const lookbackLength = Math.min(200, this.buffer.length);
         const recentBuffer = this.buffer.substring(this.buffer.length - lookbackLength);
 
-        // Pattern: word:id> or <|tag|> or <tag>
-        // Use [^a-zA-Z0-9_] as a boundary instead of \b to be more explicit about what we consider a "word start"
-        const dynamicTagPattern = /<\|[\w_]{3,}[|>]?|<\/?[\w]{3,}>?|(?:^|[^a-zA-Z0-9_])([\w_]{3,}(?::\d+)?>)/g;
+        // IMPORTANT: Keep this strict to avoid treating normal HTML/text tags
+        // (e.g. <script>, </button>) as tool tags.
+        // We only accept:
+        // - LLM control tags like <|tool_call_begin|>
+        // - compact call markers like call:0>
+        const dynamicTagPattern = /<\|[\w_]{3,}(?:\|>|>)?|(?:^|[^a-zA-Z0-9_])(call:\d+>)/g;
         const matches = Array.from(recentBuffer.matchAll(dynamicTagPattern));
 
         if (matches.length > 0) {
@@ -102,9 +107,14 @@ export class StreamTagDetector {
         // 3. Check for partials (both prefix tree and dynamic)
         const partialLength = this.prefixTree.findLongestPartialAtEnd(this.buffer);
 
-        // Dynamic partial check: also look for any trailing word characters that might be a tool name or tag
-        const trailingWordMatch = this.buffer.match(/[\w_:|<]+$/);
-        const dynamicPartialLength = trailingWordMatch ? trailingWordMatch[0].length : 0;
+        // Dynamic partial check (strict): only hold potential control-tag prefixes,
+        // not generic trailing words/text.
+        const trailingControlTag = this.buffer.match(/<\|[\w_]*$/);
+        const trailingCallMarker = this.buffer.match(/call:\d*$/);
+        const dynamicPartialLength = Math.max(
+            trailingControlTag ? trailingControlTag[0].length : 0,
+            trailingCallMarker ? trailingCallMarker[0].length : 0
+        );
 
         const maxPartial = Math.max(partialLength, dynamicPartialLength);
 
