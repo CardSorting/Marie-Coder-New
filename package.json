@@ -13,7 +13,13 @@
     "dev:legacy": "ts-node --esm src/cli-standalone/index.ts",
     "start": "node dist/cli-new/index.js",
     "start:legacy": "node dist/cli-standalone/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:cli",
+    "test:cli": "node --loader ts-node/esm tests/cli/run_all_tests.ts",
+    "test:cli:storage": "node --loader ts-node/esm tests/cli/test_storage.ts",
+    "test:cli:marie": "node --loader ts-node/esm tests/cli/test_marie_cli.ts",
+    "test:cli:tools": "node --loader ts-node/esm tests/cli/test_tool_definitions.ts",
+    "test:cli:joy": "node --loader ts-node/esm tests/cli/test_joy_services.ts",
+    "test:cli:standalone": "node --loader ts-node/esm tests/cli/test_cli_standalone.ts"
   },
   "keywords": [
     "ai",
@@ -47,6 +53,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.0"
   }
 }
