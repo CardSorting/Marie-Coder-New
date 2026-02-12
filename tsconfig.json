@@ -6,13 +6,16 @@
             "ESNext"
         ],
         "sourceMap": true,
-        "outDir": "out",
+        "outDir": "dist",
         "rootDir": "src",
-        "strict": true,
+        "strict": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "moduleResolution": "NodeNext"
+        "moduleResolution": "NodeNext",
+        "resolveJsonModule": true,
+        "jsx": "react-jsx",
+        "jsxImportSource": "react"
     },
     "include": [
         "src/**/*"
