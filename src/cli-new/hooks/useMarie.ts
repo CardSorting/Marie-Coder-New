@@ -18,6 +18,62 @@ export function useMarie(options: UseMarieOptions) {
     const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
     const [currentRun, setCurrentRun] = useState<any>(null);
     const [runElapsedMs, setRunElapsedMs] = useState(0);
+    const currentToolCallsRef = useRef<ToolCall[]>([]);
+
+    const upsertToolCall = useCallback((nextTool: ToolCall) => {
+        const existing = currentToolCallsRef.current;
+        const idx = existing.findIndex(t => t.id === nextTool.id);
+        if (idx >= 0) {
+            const updated = [...existing];
+            updated[idx] = { ...updated[idx], ...nextTool };
+            currentToolCallsRef.current = updated;
+        } else {
+            currentToolCallsRef.current = [...existing, nextTool];
+        }
+    }, []);
+
+    const formatHistoryMessage = useCallback((message: any): { content: string; toolCalls?: ToolCall[] } => {
+        if (typeof message?.content === 'string') {
+            return { content: message.content };
+        }
+
+        if (!Array.isArray(message?.content)) {
+            return { content: String(message?.content ?? '') };
+        }
+
+        const textParts: string[] = [];
+        const toolCalls: ToolCall[] = [];
+
+        for (const block of message.content) {
+            if (!block || typeof block !== 'object') continue;
+
+            if (block.type === 'text' && typeof block.text === 'string') {
+                textParts.push(block.text);
+            } else if (block.type === 'tool_use') {
+                toolCalls.push({
+                    id: block.id || `tool_hist_${Date.now()}_${toolCalls.length}`,
+                    name: block.name || 'unknown_tool',
+                    input: (block.input || {}) as Record<string, unknown>,
+                    status: 'completed',
+                });
+            } else if (block.type === 'tool_result') {
+                const toolId = block.tool_use_id;
+                const idx = toolCalls.findIndex(t => t.id === toolId);
+                if (idx >= 0) {
+                    toolCalls[idx] = {
+                        ...toolCalls[idx],
+                        output: typeof block.content === 'string' ? block.content : JSON.stringify(block.content),
+                        status: 'completed',
+                    };
+                }
+            }
+        }
+
+        return {
+            content: textParts.join('\n').trim() || '(Structured assistant response)',
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        };
+    }, []);
 
     useEffect(() => {
         marieRef.current = new MarieCLI(options.workingDir);
@@ -48,7 +104,8 @@ export function useMarie(options: UseMarieOptions) {
 
         setMessages(prev => [...prev, userMessage]);
         setIsLoading(true);
-        setStreamingState({ isActive: true, content: '' });
+        currentToolCallsRef.current = [];
+        setStreamingState({ isActive: true, content: '', toolCalls: [] });
 
         const callbacks: MarieCallbacks = {
             onStream: (chunk: string) => {
@@ -67,7 +124,9 @@ export function useMarie(options: UseMarieOptions) {
                 setStreamingState(prev => ({
                     ...prev,
                     toolCall,
+                    toolCalls: [...(prev.toolCalls || []).filter(t => t.id !== toolCall.id), toolCall],
                 }));
+                upsertToolCall(toolCall);
             },
             onToolDelta: (delta: any) => {
                 // Handle tool execution updates
@@ -90,6 +149,48 @@ export function useMarie(options: UseMarieOptions) {
                     setRunElapsedMs(0);
                 } else if (event.type === 'progress_update' && typeof event.elapsedMs === 'number') {
                     setRunElapsedMs(event.elapsedMs);
+                } else if (event.type === 'tool') {
+                    const phase = event.phase as ToolCall['status'] | 'start' | 'complete';
+                    const status: ToolCall['status'] =
+                        phase === 'error' ? 'error'
+                            : phase === 'complete' ? 'completed'
+                                : 'running';
+
+                    const eventToolId = event.id || `tool_evt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+                    const mergedTool: ToolCall = {
+                        id: eventToolId,
+                        name: event.name,
+                        input: (event.input || {}) as Record<string, unknown>,
+                        status,
+                        output: event.message,
+                    };
+
+                    setStreamingState(prev => {
+                        const existing = prev.toolCalls || [];
+                        const index = existing.findIndex(t => t.id === mergedTool.id || (t.name === mergedTool.name && t.status === 'running'));
+
+                        if (index >= 0) {
+                            const updated = [...existing];
+                            updated[index] = {
+                                ...updated[index],
+                                ...mergedTool,
+                                output: mergedTool.output || updated[index].output,
+                            };
+                            return {
+                                ...prev,
+                                toolCalls: updated,
+                                toolCall: updated[updated.length - 1],
+                            };
+                        }
+
+                        return {
+                            ...prev,
+                            toolCalls: [...existing, mergedTool],
+                            toolCall: mergedTool,
+                        };
+                    });
+
+                    upsertToolCall(mergedTool);
                 }
             },
         };
@@ -102,6 +203,7 @@ export function useMarie(options: UseMarieOptions) {
                 role: 'assistant',
                 content: response,
                 timestamp: Date.now(),
+                toolCalls: currentToolCallsRef.current.length > 0 ? currentToolCallsRef.current : undefined,
             };
 
             setMessages(prev => [...prev, assistantMessage]);
@@ -116,16 +218,18 @@ export function useMarie(options: UseMarieOptions) {
             setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
-            setStreamingState({ isActive: false, content: '' });
+            setStreamingState({ isActive: false, content: '', toolCalls: [] });
+            currentToolCallsRef.current = [];
             setCurrentRun(null);
             setRunElapsedMs(0);
         }
-    }, [isLoading]);
+    }, [isLoading, upsertToolCall]);
 
     const stopGeneration = useCallback(() => {
         marieRef.current?.stopGeneration();
         setIsLoading(false);
-        setStreamingState({ isActive: false, content: '' });
+        setStreamingState({ isActive: false, content: '', toolCalls: [] });
+        currentToolCallsRef.current = [];
         setCurrentRun(null);
         setRunElapsedMs(0);
     }, []);
@@ -142,10 +246,10 @@ export function useMarie(options: UseMarieOptions) {
         setMessages(history.map((m: any, i: number) => ({
             id: `hist_${i}`,
             role: m.role,
-            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+            ...formatHistoryMessage(m),
             timestamp: Date.now(),
         })));
-    }, []);
+    }, [formatHistoryMessage]);
 
     const clearSession = useCallback(async () => {
         await marieRef.current?.clearCurrentSession();

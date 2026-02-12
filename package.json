@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc && chmod +x dist/cli-new/index.js",
-    "dev": "ts-node --esm src/cli-new/index.ts",
+    "dev": "node --loader ts-node/esm src/cli-new/index.ts",
     "start": "node dist/cli-new/index.js",
     "test": "npm run test:cli",
     "test:cli": "node --loader ts-node/esm tests/cli/run_all_tests.ts",

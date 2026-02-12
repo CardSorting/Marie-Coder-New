@@ -38,6 +38,7 @@ export type MarieStreamEvent =
     | {
         type: 'tool';
         runId: string;
+        id?: string;
         phase: 'start' | 'complete' | 'denied' | 'error';
         name: string;
         input?: any;

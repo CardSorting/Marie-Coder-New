@@ -4,6 +4,7 @@ import { ConfigService } from "../../config/ConfigService.js";
 import { ContextManager } from "../context/ContextManager.js";
 import { SYSTEM_PROMPT } from "../../../prompts.js";
 import { MarieResponse } from "./MarieResponse.js";
+import { ToolRegistry } from "../../tools/ToolRegistry.js";
 
 /**
  * Manages a single AI chat session with a reactive streaming model.
@@ -11,6 +12,7 @@ import { MarieResponse } from "./MarieResponse.js";
 export class MarieSession {
     constructor(
         private provider: AIProvider,
+        private toolRegistry: ToolRegistry,
         private saveHistory: (telemetry?: any) => Promise<void>,
         private messages: any[],
         private tracker?: MarieProgressTracker,
@@ -48,6 +50,7 @@ export class MarieSession {
                 max_tokens: 2048,
                 messages: managedMessages,
                 system: SYSTEM_PROMPT,
+                tools: this.toolRegistry.getTools(),
             } as any;
 
             const eventQueue: AIStreamEvent[] = [];
@@ -182,6 +185,7 @@ export class MarieSession {
             max_tokens: 2048,
             messages: await ContextManager.manage(this.messages, this.provider, snapshot),
             system: SYSTEM_PROMPT,
+            tools: this.toolRegistry.getTools(),
         } as any;
 
         const response = await this.provider.createMessageStream(params, () => { });

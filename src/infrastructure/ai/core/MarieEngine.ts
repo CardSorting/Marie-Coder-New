@@ -291,7 +291,7 @@ export class MarieEngine {
             }
         };
 
-        const session = new MarieSession(this.provider, saveHistory, messages, tracker, this.providerFactory);
+        const session = new MarieSession(this.provider, this.toolRegistry, saveHistory, messages, tracker, this.providerFactory);
         try {
             const stream = session.executeLoop(messages, signal, snapshot);
             for await (const event of stream) {
@@ -469,6 +469,31 @@ export class MarieEngine {
             return await this._executeChatLoop(messages, tracker, saveHistory, signal, consecutiveErrorCount + 1, depth + 1);
         }
 
+        const latestUserText = this.extractLatestUserText(messages);
+        const isToollessCodeOnlyTurn =
+            totalToolCount === 0 &&
+            this.looksLikeFileActionRequest(latestUserText) &&
+            !this.isExplicitlyTextOnlyRequest(latestUserText) &&
+            this.containsCodeBlocks(finalContent) &&
+            !latestUserText.startsWith("⚠️ ACTION REQUIRED:");
+
+        if (isToollessCodeOnlyTurn && consecutiveErrorCount < 3) {
+            this.council.recordShakyResponse();
+            tracker.emitEvent({
+                type: 'reasoning',
+                runId: tracker.getRun().runId,
+                text: "🛠️ ENFORCEMENT: Detected code-only response for a file-action request. Requiring real tool execution now.",
+                elapsedMs: tracker.elapsedMs()
+            });
+
+            messages.push({
+                role: "user",
+                content: "⚠️ ACTION REQUIRED: Do not paste implementation code only. You MUST execute file/terminal tools to create or modify workspace files, then summarize what changed."
+            });
+
+            return await this._executeChatLoop(messages, tracker, saveHistory, signal, consecutiveErrorCount + 1, depth + 1);
+        }
+
         // BALANCED SUPREMACY: Audit logic respects Founder's high conviction
         if (consecutiveErrorCount < 3 && finalContent.length > 20) {
             const yoloDecision = this.council.getLastYoloDecision();
@@ -556,6 +581,67 @@ export class MarieEngine {
         }
 
         return !inString && stack.length === 0;
+    }
+
+    private extractLatestUserText(messages: any[]): string {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const message = messages[i];
+            if (message?.role !== 'user') continue;
+
+            if (typeof message.content === 'string') {
+                return message.content;
+            }
+
+            if (Array.isArray(message.content)) {
+                const text = message.content
+                    .filter((b: any) => b?.type === 'text' && typeof b.text === 'string')
+                    .map((b: any) => b.text)
+                    .join('\n')
+                    .trim();
+                if (text) return text;
+            }
+        }
+
+        return '';
+    }
+
+    private looksLikeFileActionRequest(text: string): boolean {
+        if (!text) return false;
+        const lowered = text.toLowerCase();
+
+        const actionHints = [
+            'create file', 'write file', 'edit file', 'update file', 'modify file',
+            'patch', 'workspace', 'folder', 'run command', 'cli', 'terminal',
+            'apply patch', 'implement', 'scaffold', 'save to', 'in the project'
+        ];
+
+        const fileHints = ['file', 'workspace', 'folder', 'directory', 'cli', 'terminal', 'repo', 'project'];
+        const hasActionHint = actionHints.some(token => lowered.includes(token));
+        const hasFileHint = fileHints.some(token => lowered.includes(token));
+
+        return hasActionHint && hasFileHint;
+    }
+
+    private isExplicitlyTextOnlyRequest(text: string): boolean {
+        if (!text) return false;
+        const lowered = text.toLowerCase();
+
+        return [
+            'just explain',
+            'explain only',
+            'only explain',
+            'do not modify',
+            "don't modify",
+            'no edits',
+            'show example',
+            'example only',
+            'just show code',
+        ].some(token => lowered.includes(token));
+    }
+
+    private containsCodeBlocks(text: string): boolean {
+        if (!text) return false;
+        return /```[\s\S]*?```/.test(text);
     }
 
     public dispose(): void {

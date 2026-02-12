@@ -62,7 +62,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, streamingState }) 
                 />
             ))}
 
-            {streamingState.isActive && streamingState.content && (
+            {streamingState.isActive && (streamingState.content || (streamingState.toolCalls && streamingState.toolCalls.length > 0)) && (
                 <MessageBubble
                     message={{
                         id: 'streaming',
@@ -70,6 +70,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages, streamingState }) 
                         content: streamingState.content,
                         timestamp: Date.now(),
                         isStreaming: true,
+                        toolCalls: streamingState.toolCalls,
                     }}
                     isStreaming={true}
                 />

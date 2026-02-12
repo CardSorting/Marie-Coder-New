@@ -92,6 +92,7 @@ export class MarieToolProcessor {
             this.tracker.emitEvent({
                 type: 'tool',
                 runId: this.tracker.getRun().runId,
+                id: toolCall.id,
                 phase: 'start',
                 name: toolCall.name,
                 input: sanitizedInput,
@@ -153,6 +154,7 @@ export class MarieToolProcessor {
             this.tracker.emitEvent({
                 type: 'tool',
                 runId: this.tracker.getRun().runId,
+                id: toolCall.id,
                 phase: 'complete',
                 name: toolCall.name,
                 message: typeof result === 'string' ? result.substring(0, 100) : 'Completed',
@@ -223,7 +225,7 @@ export class MarieToolProcessor {
             }
             this.failureCircuitBreaker.set(name, state);
 
-            this.recordError(name, rawMsg, isTerminal);
+            this.recordError(name, rawMsg, isTerminal, toolCall.id);
             console.error(`[Marie] Tool ${name} failed: ${rawMsg}`);
 
             if (isTerminal || state.count >= 3) {
@@ -441,10 +443,11 @@ export class MarieToolProcessor {
         }
     }
 
-    private recordError(name: string, message: string, isTerminal: boolean = false) {
+    private recordError(name: string, message: string, isTerminal: boolean = false, toolCallId?: string) {
         this.tracker.emitEvent({
             type: 'tool',
             runId: this.tracker.getRun().runId,
+            id: toolCallId,
             phase: 'error',
             name,
             message: (isTerminal ? "[TERMINAL] " : "") + message,

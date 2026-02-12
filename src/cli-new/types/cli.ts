@@ -45,6 +45,7 @@ export interface StreamingState {
     isActive: boolean;
     content: string;
     toolCall?: ToolCall;
+    toolCalls?: ToolCall[];
 }
 
 export interface ApprovalRequest {
