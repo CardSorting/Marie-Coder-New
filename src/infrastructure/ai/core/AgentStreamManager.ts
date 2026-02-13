@@ -93,6 +93,19 @@ export class AgentStreamManager {
         return state;
     }
 
+    public shedNonCriticalStreams(): string[] {
+        const protectedIntents = new Set(['SAFETY_BLOCKER_CHECK', 'QUALITY_REGRESSION_SCAN']);
+        const cancelled: string[] = [];
+
+        for (const handle of this.active.values()) {
+            if (protectedIntents.has(handle.intent)) continue;
+            this.cancel(handle.streamId, 'pressure_shed');
+            cancelled.push(handle.streamId);
+        }
+
+        return cancelled;
+    }
+
     public activeCount(): number {
         return this.active.size;
     }

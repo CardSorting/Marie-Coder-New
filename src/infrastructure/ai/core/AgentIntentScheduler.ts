@@ -52,6 +52,9 @@ export class AgentIntentScheduler {
             });
         }
 
-        return plans.sort((a, b) => b.score - a.score);
+        return plans.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return a.sequence - b.sequence;
+        });
     }
 }

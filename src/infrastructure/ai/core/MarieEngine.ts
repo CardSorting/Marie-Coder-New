@@ -701,6 +701,18 @@ export class MarieEngine {
         const plans = this.agentIntentScheduler.plan(context, intents);
         this.agentMergeArbiter.clear();
 
+        if (context.pressure === 'HIGH' && ConfigService.isAgentStreamPressureSheddingEnabled()) {
+            const shed = this.agentStreamManager.shedNonCriticalStreams();
+            if (shed.length > 0) {
+                tracker.emitEvent({
+                    type: 'reasoning',
+                    runId: tracker.getRun().runId,
+                    text: `🧯 Pressure shedding cancelled ${shed.length} non-critical agent streams`,
+                    elapsedMs: tracker.elapsedMs(),
+                });
+            }
+        }
+
         let policyAcceptedCount = 0;
         let executionAcceptedCount = 0;
         for (const plan of plans) {
@@ -708,7 +720,13 @@ export class MarieEngine {
             if (plan.executionAccepted) executionAcceptedCount++;
         }
 
-        for (const plan of plans.slice(0, this.agentStreamPolicy.getMaxConcurrentStreams())) {
+        const spawnBudget = Math.min(
+            this.agentStreamPolicy.getMaxConcurrentStreams(),
+            ConfigService.getAgentStreamMaxSpawnsPerTurn()
+        );
+        let spawnedThisTurn = 0;
+
+        for (const plan of plans.slice(0, spawnBudget)) {
             tracker.emitEvent({
                 type: 'reasoning',
                 runId: tracker.getRun().runId,
@@ -717,9 +735,11 @@ export class MarieEngine {
             });
 
             if (!plan.executionAccepted) continue;
+            if (spawnedThisTurn >= spawnBudget) break;
 
             const handle = this.agentStreamManager.spawn(plan);
             if (!handle) continue;
+            spawnedThisTurn++;
 
             const isPilotAgent = pilotAgents.has(String(plan.agentId).toUpperCase());
 
@@ -811,6 +831,7 @@ export class MarieEngine {
             });
 
             if (envelope.streamIdentity.agentId === 'QASRE') {
+                const previousQasreEnvelope = this.council.blackboard.read('agent:qasre:lastEnvelope') as { streamId?: string } | undefined;
                 this.council.blackboard.write('agent:qasre:lastEnvelope', {
                     decision: envelope.decision,
                     confidence: envelope.confidence,
@@ -819,7 +840,8 @@ export class MarieEngine {
                     streamId: envelope.streamIdentity.streamId,
                 });
 
-                if ((envelope.decision === 'QASRE_DEBUG' || envelope.decision === 'QASRE_CRITICAL') && envelope.confidence >= 1.2) {
+                const isDuplicateVote = previousQasreEnvelope?.streamId === envelope.streamIdentity.streamId;
+                if (!isDuplicateVote && (envelope.decision === 'QASRE_DEBUG' || envelope.decision === 'QASRE_CRITICAL') && envelope.confidence >= 1.2) {
                     this.council.registerVote('QASRE', 'DEBUG', `Agent stream finding: ${envelope.summary || 'risk detected'}`, Math.min(2.2, Math.max(1.0, envelope.confidence)));
                 }
             }

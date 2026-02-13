@@ -294,4 +294,38 @@ export class ConfigService {
 
         return ['QASRE'];
     }
+
+    static getAgentStreamMaxSpawnsPerTurn(): number {
+        const vscode = getVscode();
+        let value = 3;
+
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("agentStreamMaxSpawnsPerTurn", 3);
+        } else {
+            const config = getCliConfig();
+            if (typeof config.agentStreamMaxSpawnsPerTurn === 'number') {
+                value = config.agentStreamMaxSpawnsPerTurn;
+            }
+        }
+
+        return Math.max(1, Math.min(16, value));
+    }
+
+    static isAgentStreamPressureSheddingEnabled(): boolean {
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<boolean>("agentStreamPressureSheddingEnabled", true);
+        }
+
+        const config = getCliConfig();
+        if (typeof config.agentStreamPressureSheddingEnabled === 'boolean') {
+            return config.agentStreamPressureSheddingEnabled;
+        }
+
+        if (process.env.MARIE_AGENT_STREAM_PRESSURE_SHEDDING_ENABLED === '0') {
+            return false;
+        }
+
+        return true;
+    }
 }

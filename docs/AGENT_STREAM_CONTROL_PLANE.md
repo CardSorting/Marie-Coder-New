@@ -63,6 +63,9 @@ Defaults are conservative and safe.
 - Stream manager enforces max-concurrency guardrails and propagates standardized terminal reasons (`timeout`, `manual_cancel`, `engine_dispose`, `pressure_shed`).
 - Arbiter now applies deterministic conflict handling with intent priority and blocking-condition dominance.
 - QASRE pilot path emits incremental stream telemetry and records stream provenance (`streamId`) into blackboard envelope memory.
+- Added per-turn spawn budget control: `getAgentStreamMaxSpawnsPerTurn()`.
+- Added pressure-shedding switch: `isAgentStreamPressureSheddingEnabled()`.
+- Engine now sheds non-critical active streams under HIGH pressure before planning new spawns.
 
 ## Engine integration (non-invasive)
 
@@ -81,3 +84,16 @@ Important: this integration does **not** alter existing swarm behavior or tool e
 3. Enable `agentStreamPilotAgents` for one pilot (e.g. `QASRE`) and validate isolated streaming telemetry.
 4. Gate merges via arbiter commit policy.
 5. Expand to additional agents gradually.
+
+## Stage-gate checklist (recommended)
+
+1. **Shadow confidence gate**
+   - Track `policyAccepted` vs `executionAccepted` divergence.
+   - Verify deterministic stream IDs and stable scheduler ordering in repeated runs.
+2. **Pilot safety gate**
+   - Enable only `QASRE` in `agentStreamPilotAgents`.
+   - Keep low `agentStreamMaxSpawnsPerTurn` while validating telemetry and timeout behavior.
+3. **Load/pressure gate**
+   - Simulate HIGH pressure and verify pressure shedding only cancels non-critical intents.
+4. **Expansion gate**
+   - Add one agent at a time; keep rollback path by toggling `agentStreamsEnabled=false`.

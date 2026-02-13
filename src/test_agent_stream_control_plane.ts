@@ -66,6 +66,9 @@ function testSchedulerDeterminismAndAcceptanceSemantics(): void {
     assert(livePlan.policyAccepted === true, 'Expected policyAccepted=true in live mode');
     assert(livePlan.executionAccepted === true, 'Expected executionAccepted=true in live mode');
     assert(livePlan.accepted === true, 'Expected accepted alias=true in live mode');
+
+    const equalScorePlans = liveScheduler.plan(context, [createIntent('QASRE'), createIntent('ISO9001')]);
+    assert(equalScorePlans[0].sequence < equalScorePlans[1].sequence, 'Expected stable tie-break by sequence for equal scores');
 }
 
 function testManagerConcurrencyAndReasonPropagation(): void {
@@ -98,6 +101,21 @@ function testManagerConcurrencyAndReasonPropagation(): void {
         const terminal = manager.consumeTerminalState('stream_1');
         assert(terminal?.status === 'cancelled', 'Expected cancelled terminal status');
         assert(terminal?.reason === 'pressure_shed', 'Expected propagated pressure_shed reason');
+
+        const quality = manager.spawn(mkPlan('stream_quality'));
+        const readiness = manager.spawn({ ...mkPlan('stream_readiness'), intent: 'READINESS_GATE', streamIdentity: { streamId: 'stream_readiness', origin: 'agent', agentId: 'ISO9001' } });
+        assert(Boolean(quality), 'Expected quality stream to spawn');
+        assert(readiness === null, 'Expected readiness stream blocked by max concurrency cap in this test setup');
+
+        manager.complete('stream_quality');
+        manager.consumeTerminalState('stream_quality');
+
+        const readiness2 = manager.spawn({ ...mkPlan('stream_readiness2'), intent: 'READINESS_GATE', streamIdentity: { streamId: 'stream_readiness2', origin: 'agent', agentId: 'ISO9001' } });
+        assert(Boolean(readiness2), 'Expected readiness stream to spawn after slot clears');
+        const shed = manager.shedNonCriticalStreams();
+        assert(shed.includes('stream_readiness2'), 'Expected non-critical stream to be shed under pressure policy');
+        const shedTerminal = manager.consumeTerminalState('stream_readiness2');
+        assert(shedTerminal?.reason === 'pressure_shed', 'Expected shed stream to carry pressure_shed reason');
     } finally {
         (ConfigService as any).getAgentStreamMaxConcurrent = originalMaxConcurrent;
     }
