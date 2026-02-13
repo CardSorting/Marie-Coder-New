@@ -1,14 +1,12 @@
 import { AnthropicProvider } from '../infrastructure/ai/providers/AnthropicProvider.js';
 import { OpenRouterProvider } from '../infrastructure/ai/providers/OpenRouterProvider.js';
 import { CerebrasProvider } from '../infrastructure/ai/providers/CerebrasProvider.js';
-import { AIProvider } from '../infrastructure/ai/providers/AIProvider.js';
 import { MarieCallbacks, RunTelemetry } from '../domain/marie/MarieTypes.js';
 import { registerMarieToolsCLI } from '../cli/MarieToolDefinitionsCLI.js';
 import { Storage, SessionMetadata } from '../cli/storage.js';
 import { JoyServiceCLI } from '../cli/services/JoyServiceCLI.js';
-import { JoyAutomationServiceCLI } from '../cli/services/JoyAutomationServiceCLI.js';
 import { MarieRuntime } from '../runtime/MarieRuntime.js';
-import { MarieProviderType, RuntimeConfigPort, RuntimeSessionStorePort } from '../runtime/types.js';
+import { MarieProviderType, RuntimeAutomationPort, RuntimeConfigPort, RuntimeSessionStorePort } from '../runtime/types.js';
 
 class CliConfigPort implements RuntimeConfigPort {
     getAiProvider(): MarieProviderType {
@@ -59,14 +57,21 @@ class CliSessionStorePort implements RuntimeSessionStorePort {
 }
 
 export class MarieCLI {
-    private readonly runtime: MarieRuntime<JoyAutomationServiceCLI>;
+    private readonly runtime: MarieRuntime<RuntimeAutomationPort>;
     private readonly joyService: JoyServiceCLI;
 
     constructor(workingDir: string = process.cwd()) {
         this.joyService = new JoyServiceCLI();
-        const automationService = new JoyAutomationServiceCLI(this.joyService, workingDir);
+        const automationService: RuntimeAutomationPort = {
+            setCurrentRun: (_run: RunTelemetry | undefined) => {
+                // CLI automation hooks are intentionally minimal.
+            },
+            dispose: () => {
+                // No-op
+            }
+        };
 
-        this.runtime = new MarieRuntime<JoyAutomationServiceCLI>({
+        this.runtime = new MarieRuntime<RuntimeAutomationPort>({
             config: new CliConfigPort(),
             sessionStore: new CliSessionStorePort(),
             toolRegistrar: (registry, automation) => registerMarieToolsCLI(registry, automation, workingDir),
@@ -83,19 +88,6 @@ export class MarieCLI {
                 return autonomyMode === 'yolo';
             }
         });
-    }
-
-    public createProvider(providerType: string): AIProvider {
-        const config = Storage.getConfig();
-        const key = providerType === 'openrouter'
-            ? config.openrouterApiKey || ''
-            : providerType === 'cerebras'
-                ? config.cerebrasApiKey || ''
-                : config.apiKey || '';
-
-        if (providerType === 'openrouter') return new OpenRouterProvider(key);
-        if (providerType === 'cerebras') return new CerebrasProvider(key);
-        return new AnthropicProvider(key);
     }
 
     public async createSession() { return this.runtime.createSession(); }

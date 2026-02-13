@@ -1,11 +1,10 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { ToolRegistry } from "../infrastructure/tools/ToolRegistry.js";
-import { getStringArg, getArrayArg } from "../infrastructure/tools/ToolUtils.js";
-import { withTimeout } from "../plumbing/utils/TimeoutUtils.js";
+import { getStringArg } from "../infrastructure/tools/ToolUtils.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { JoyAutomationServiceCLI } from "./services/JoyAutomationServiceCLI.js";
+import { RuntimeAutomationPort } from "../runtime/types.js";
 
 const execAsync = promisify(exec);
 
@@ -114,7 +113,7 @@ async function getFolderTree(dirPath: string, maxDepth: number = 3): Promise<str
     return `${name}/\n${await buildTree(dirPath, 1, '')}`;
 }
 
-export function registerMarieToolsCLI(registry: ToolRegistry, automationService: JoyAutomationServiceCLI, workingDir: string) {
+export function registerMarieToolsCLI(registry: ToolRegistry, _automationService: RuntimeAutomationPort, workingDir: string) {
     registry.register({
         name: "write_file",
         description: "Write content to a file. Creates directories if needed.",

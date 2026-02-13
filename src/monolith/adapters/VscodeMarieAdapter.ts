@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import { AnthropicProvider } from "../infrastructure/ai/providers/AnthropicProvider.js";
 import { OpenRouterProvider } from "../infrastructure/ai/providers/OpenRouterProvider.js";
 import { CerebrasProvider } from "../infrastructure/ai/providers/CerebrasProvider.js";
-import { AIProvider } from "../infrastructure/ai/providers/AIProvider.js";
 import { MarieCallbacks, RunTelemetry } from "../domain/marie/MarieTypes.js";
 import { registerMarieTools } from "../infrastructure/tools/MarieToolDefinitions.js";
 import { JoyAutomationService } from "../services/JoyAutomationService.js";
@@ -76,18 +75,6 @@ export class Marie implements vscode.Disposable {
             automationService,
             onProgressEvent: (event) => this.joyService.onRunProgress(event as any)
         });
-    }
-
-    public createProvider(providerType: string): AIProvider {
-        const key = providerType === 'openrouter'
-            ? ConfigService.getOpenRouterApiKey() || ''
-            : providerType === 'cerebras'
-                ? ConfigService.getCerebrasApiKey() || ''
-                : ConfigService.getApiKey() || '';
-
-        if (providerType === 'openrouter') return new OpenRouterProvider(key);
-        if (providerType === 'cerebras') return new CerebrasProvider(key);
-        return new AnthropicProvider(key);
     }
 
     public async createSession() { return this.runtime.createSession(); }

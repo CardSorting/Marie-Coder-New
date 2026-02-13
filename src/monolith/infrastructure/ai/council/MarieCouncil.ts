@@ -14,8 +14,7 @@ import { CouncilConsensus } from "./CouncilConsensus.js";
 import { CouncilBrain } from "./CouncilBrain.js";
 import { CouncilMoods } from "./CouncilMoods.js";
 import { MarieStabilityMonitor } from "../core/MarieStabilityMonitor.js";
-import { AdvancedYOLOIntegration, ConvictionMomentum, StrategicAlignment } from "./AdvancedYOLOIntegration.js";
-import { EnhancedAgentCoordination } from "./EnhancedAgentCoordination.js";
+import { YOLOCouncilIntegration } from "./YOLOCouncilIntegration.js";
 import { AgentSpecialization, TaskType } from "./AgentSpecialization.js";
 import { YOLOInfluenceMetrics } from "./YOLOCouncilIntegration.js";
 import { AgentCoordination } from "./AgentCoordination.js";
@@ -27,7 +26,7 @@ export class MarieCouncil {
     private consensus: CouncilConsensus;
     private brain: CouncilBrain;
     private moods: CouncilMoods;
-    private yoloIntegration: AdvancedYOLOIntegration;
+    private yoloIntegration: YOLOCouncilIntegration;
     private specialization: AgentSpecialization;
 
     constructor() {
@@ -35,7 +34,7 @@ export class MarieCouncil {
         this.consensus = new CouncilConsensus(this.state);
         this.brain = new CouncilBrain(this.state);
         this.moods = new CouncilMoods(this.state);
-        this.yoloIntegration = new AdvancedYOLOIntegration(this);
+        this.yoloIntegration = new YOLOCouncilIntegration(this);
         this.specialization = new AgentSpecialization(this);
 
         this.state.loadPersistent();
