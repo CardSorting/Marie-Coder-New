@@ -4,7 +4,7 @@ const production = process.argv.includes("--production")
 const watch = process.argv.includes("--watch")
 
 async function main() {
-    const ctx = await esbuild.context({
+    const extensionCtx = await esbuild.context({
         entryPoints: ["src/extension.ts"],
         bundle: true,
         format: "cjs",
@@ -16,11 +16,27 @@ async function main() {
         external: ["vscode"],
         logLevel: "info",
     })
+
+    const webviewCtx = await esbuild.context({
+        entryPoints: ["src/webview-ui/main.ts"],
+        bundle: true,
+        format: "iife",
+        minify: production,
+        sourcemap: !production,
+        sourcesContent: false,
+        platform: "browser",
+        outfile: "dist/webview-ui/main.js",
+        logLevel: "info",
+    })
+
     if (watch) {
-        await ctx.watch()
+        await extensionCtx.watch()
+        await webviewCtx.watch()
     } else {
-        await ctx.rebuild()
-        await ctx.dispose()
+        await extensionCtx.rebuild()
+        await webviewCtx.rebuild()
+        await extensionCtx.dispose()
+        await webviewCtx.dispose()
     }
 }
 

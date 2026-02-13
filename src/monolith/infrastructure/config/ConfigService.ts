@@ -120,6 +120,20 @@ export class ConfigService {
         return config.requireApproval !== false;
     }
 
+    static getAutonomyMode(): 'balanced' | 'high' | 'yolo' {
+        const vscode = getVscode();
+        if (vscode) {
+            const configured = vscode.workspace.getConfiguration("marie").get<'balanced' | 'high' | 'yolo'>("autonomyMode");
+            if (configured) return configured;
+            return this.getRequireApproval() ? 'balanced' : 'high';
+        }
+
+        const config = getCliConfig();
+        const configured = config.autonomyMode as 'balanced' | 'high' | 'yolo' | undefined;
+        if (configured) return configured;
+        return config.requireApproval === false ? 'high' : 'balanced';
+    }
+
     static getMaxContextTokens(): number {
         const vscode = getVscode();
         if (vscode) {

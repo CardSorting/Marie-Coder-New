@@ -67,7 +67,8 @@ export class Marie extends RuntimeAdapterBase<JoyAutomationService> implements v
             toolRegistrar: registerMarieTools,
             providerFactory: createDefaultProvider,
             automationService,
-            onProgressEvent: (event) => this.joyService.onRunProgress(event as any)
+            onProgressEvent: (event) => this.joyService.onRunProgress(event as any),
+            shouldBypassApprovals: () => ConfigService.getAutonomyMode() === 'yolo'
         });
 
         super(runtime);

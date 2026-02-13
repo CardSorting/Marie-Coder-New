@@ -3,7 +3,8 @@
         "module": "NodeNext",
         "target": "ESNext",
         "lib": [
-            "ESNext"
+            "ESNext",
+            "DOM"
         ],
         "sourceMap": true,
         "outDir": "dist",
