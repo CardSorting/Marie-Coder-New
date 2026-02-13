@@ -1,109 +1,92 @@
-import { ToolRegistry } from '../infrastructure/tools/ToolRegistry.js';
-import { AnthropicProvider } from '../infrastructure/ai/providers/AnthropicProvider.js';
-import { OpenRouterProvider } from '../infrastructure/ai/providers/OpenRouterProvider.js';
-import { CerebrasProvider } from '../infrastructure/ai/providers/CerebrasProvider.js';
-import { AIProvider } from '../infrastructure/ai/providers/AIProvider.js';
-import { MarieEngine } from '../infrastructure/ai/core/MarieEngine.js';
-import { MarieProgressTracker } from '../infrastructure/ai/core/MarieProgressTracker.js';
-import { MarieCallbacks, RunTelemetry } from '../domain/marie/MarieTypes.js';
-import { registerMarieToolsCLI } from './MarieToolDefinitionsCLI.js';
-import { StringUtils } from '../plumbing/utils/StringUtils.js';
-import { MarieResponse } from '../infrastructure/ai/core/MarieResponse.js';
-import { Storage, SessionMetadata } from './storage.js';
-import { JoyServiceCLI } from './services/JoyServiceCLI.js';
-import { JoyAutomationServiceCLI } from './services/JoyAutomationServiceCLI.js';
-import * as path from 'path';
-import * as fs from 'fs';
+import { ToolRegistry } from "../../infrastructure/tools/ToolRegistry.js";
+import { MarieEngine } from "../../infrastructure/ai/core/MarieEngine.js";
+import { MarieProgressTracker } from "../../infrastructure/ai/core/MarieProgressTracker.js";
+import { MarieResponse } from "../../infrastructure/ai/core/MarieResponse.js";
+import { StringUtils } from "../../plumbing/utils/StringUtils.js";
+import { MarieCallbacks, RunTelemetry } from "../../domain/marie/MarieTypes.js";
+import { AIProvider } from "../../infrastructure/ai/providers/AIProvider.js";
+import {
+    MarieProviderType,
+    RuntimeAutomationPort,
+    RuntimeMessageHandler,
+    RuntimeOptions,
+    SessionMetadata
+} from "./types.js";
 
-export class MarieCLI {
+export class MarieRuntime<TAutomation extends RuntimeAutomationPort> implements RuntimeMessageHandler {
     private provider: AIProvider | undefined;
-    private _lastProviderKey: string | undefined;
+    private lastProviderKey: string | undefined;
     private toolRegistry: ToolRegistry;
-    private automationService: JoyAutomationServiceCLI;
     private currentSessionId: string = 'default';
     private messages: any[] = [];
     private abortController: AbortController | null = null;
     private currentRun: RunTelemetry | undefined;
-    private joyService: JoyServiceCLI;
     private pendingApprovals = new Map<string, (approved: boolean) => void>();
-    private workingDir: string;
+    private readonly initPromise: Promise<void>;
 
-    constructor(workingDir: string = process.cwd()) {
-        this.workingDir = workingDir;
+    constructor(private readonly options: RuntimeOptions<TAutomation>) {
         this.toolRegistry = new ToolRegistry();
-        this.joyService = new JoyServiceCLI();
-        this.automationService = new JoyAutomationServiceCLI(this.joyService, workingDir);
-        this.registerTools();
-        this.currentSessionId = Storage.getCurrentSessionId();
-        this.loadHistory();
+        this.options.toolRegistrar(this.toolRegistry, this.options.automationService);
+        this.initPromise = this.initialize();
     }
 
-    private registerTools() {
-        registerMarieToolsCLI(this.toolRegistry, this.automationService, this.workingDir);
+    private async initialize(): Promise<void> {
+        this.currentSessionId = await this.options.sessionStore.getCurrentSessionId() || 'default';
+        await this.loadHistory();
     }
 
-    public createProvider(providerType: string): AIProvider {
-        const config = Storage.getConfig();
-        const key = providerType === 'openrouter'
-            ? config.openrouterApiKey || ''
-            : providerType === 'cerebras'
-                ? config.cerebrasApiKey || ''
-                : config.apiKey || '';
-
-        if (providerType === 'openrouter') {
-            return new OpenRouterProvider(key);
-        } else if (providerType === 'cerebras') {
-            return new CerebrasProvider(key);
-        } else {
-            return new AnthropicProvider(key);
-        }
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
     }
 
-    private initializeProvider() {
-        const config = Storage.getConfig();
-        const providerType = config.aiProvider;
-        const key = providerType === 'openrouter'
-            ? config.openrouterApiKey || ''
-            : providerType === 'cerebras'
-                ? config.cerebrasApiKey || ''
-                : config.apiKey || '';
+    private createProvider(providerType: string): AIProvider {
+        const typedProvider = (providerType as MarieProviderType);
+        const key = this.options.config.getApiKey(typedProvider) || '';
+        return this.options.providerFactory(typedProvider, key);
+    }
 
+    private initializeProvider(): void {
+        const providerType = this.options.config.getAiProvider();
+        const key = this.options.config.getApiKey(providerType) || '';
         const cacheKey = `${providerType}:${key}`;
-        if (this.provider && this._lastProviderKey === cacheKey) {
+
+        if (this.provider && this.lastProviderKey === cacheKey) {
             return;
         }
-        this._lastProviderKey = cacheKey;
-        this.provider = this.createProvider(providerType);
+
+        this.lastProviderKey = cacheKey;
+        this.provider = this.options.providerFactory(providerType, key);
     }
 
-    private async loadHistory() {
-        const historyMap = Storage.getSessions();
+    private async loadHistory(): Promise<void> {
+        const historyMap = await this.options.sessionStore.getSessions();
         this.messages = historyMap[this.currentSessionId] || [];
     }
 
-    private async saveHistory(telemetry?: any, specificSessionId?: string, runStartTime?: number) {
+    private async saveHistory(telemetry?: any, specificSessionId?: string, runStartTime?: number): Promise<void> {
         if (this.messages.length > 50) {
             this.messages = this.messages.slice(this.messages.length - 50);
         }
 
         const sid = specificSessionId || this.currentSessionId;
-        const historyMap = Storage.getSessions();
+        const historyMap = await this.options.sessionStore.getSessions();
+
         const currentSessionMatches = sid === this.currentSessionId;
         const isSessionStillValid = runStartTime ? true : currentSessionMatches;
 
         if (sid === this.currentSessionId && isSessionStillValid) {
             historyMap[sid] = this.messages;
         } else {
-            console.warn(`[Marie] FENCING VIOLATION: Session switched mid-run.`);
             if (!historyMap[sid]) {
                 historyMap[sid] = [];
             }
         }
 
-        Storage.saveSessions(historyMap);
+        await this.options.sessionStore.saveSessions(historyMap);
 
-        const sessionMetadata = Storage.getSessionMetadata();
+        const sessionMetadata = await this.options.sessionStore.getSessionMetadata();
         const index = sessionMetadata.findIndex((s: SessionMetadata) => s.id === sid);
+
         const targetMessages = sid === this.currentSessionId ? this.messages : historyMap[sid];
         const firstMsg = targetMessages && targetMessages.length > 0 ? targetMessages[0].content : '';
         const title = targetMessages && targetMessages.length > 0 ? this.generateSessionTitle(firstMsg) : 'New Session';
@@ -114,35 +97,34 @@ export class MarieCLI {
                 sessionMetadata[index].title = title;
             }
         } else if (sid !== 'default') {
-            sessionMetadata.unshift({
-                id: sid,
-                title: title,
-                lastModified: Date.now(),
-                isPinned: false
-            });
+            sessionMetadata.unshift({ id: sid, title, lastModified: Date.now(), isPinned: false });
         }
-        Storage.saveSessionMetadata(sessionMetadata);
+
+        await this.options.sessionStore.saveSessionMetadata(sessionMetadata);
 
         if (sid === this.currentSessionId) {
-            Storage.setCurrentSessionId(sid);
+            await this.options.sessionStore.setCurrentSessionId(sid);
         }
 
         if (telemetry !== undefined) {
-            Storage.setLastTelemetry(telemetry === null ? undefined : telemetry);
+            await this.options.sessionStore.setLastTelemetry(telemetry === null ? undefined : telemetry);
         }
     }
 
     private generateSessionTitle(firstMessage: any): string {
         const response = MarieResponse.wrap(firstMessage);
         const text = response.getText();
+
         const goalMatch = text.match(/(?:Goal|Objective|Task):\s*([^\n.]+)/i);
         if (goalMatch && goalMatch[1].trim()) {
             return this.formatTitle(goalMatch[1].trim());
         }
+
         const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 5);
         if (lines.length > 0 && lines[0].length < 60) {
             return this.formatTitle(lines[0]);
         }
+
         const summary = text.trim() || 'New Session';
         return this.formatTitle(summary);
     }
@@ -155,36 +137,41 @@ export class MarieCLI {
         return clean || 'New Session';
     }
 
-    public async createSession() {
+    public async createSession(): Promise<string> {
+        await this.ensureInitialized();
         this.currentSessionId = `session_${Date.now()}`;
         this.messages = [];
         await this.saveHistory();
         return this.currentSessionId;
     }
 
-    public listSessions(): SessionMetadata[] {
-        return Storage.getSessionMetadata();
+    public async listSessions(): Promise<SessionMetadata[]> {
+        await this.ensureInitialized();
+        return this.options.sessionStore.getSessionMetadata();
     }
 
     public async loadSession(id: string): Promise<string> {
+        await this.ensureInitialized();
         this.stopGeneration();
         this.currentSessionId = id;
         await this.loadHistory();
-        Storage.setCurrentSessionId(id);
+        await this.options.sessionStore.setCurrentSessionId(id);
         return this.currentSessionId;
     }
 
-    public async deleteSession(id: string) {
+    public async deleteSession(id: string): Promise<void> {
+        await this.ensureInitialized();
         if (this.currentSessionId === id) {
             this.stopGeneration();
         }
-        const historyMap = Storage.getSessions();
-        delete historyMap[id];
-        Storage.saveSessions(historyMap);
 
-        const sessionMetadata = Storage.getSessionMetadata();
+        const historyMap = await this.options.sessionStore.getSessions();
+        delete historyMap[id];
+        await this.options.sessionStore.saveSessions(historyMap);
+
+        const sessionMetadata = await this.options.sessionStore.getSessionMetadata();
         const filteredMetadata = sessionMetadata.filter(s => s.id !== id);
-        Storage.saveSessionMetadata(filteredMetadata);
+        await this.options.sessionStore.saveSessionMetadata(filteredMetadata);
 
         if (this.currentSessionId === id) {
             if (filteredMetadata.length > 0) {
@@ -195,31 +182,35 @@ export class MarieCLI {
         }
     }
 
-    public async renameSession(id: string, newTitle: string) {
-        const sessionMetadata = Storage.getSessionMetadata();
+    public async renameSession(id: string, newTitle: string): Promise<void> {
+        await this.ensureInitialized();
+        const sessionMetadata = await this.options.sessionStore.getSessionMetadata();
         const index = sessionMetadata.findIndex(s => s.id === id);
         if (index >= 0) {
             sessionMetadata[index].title = newTitle;
-            Storage.saveSessionMetadata(sessionMetadata);
+            await this.options.sessionStore.saveSessionMetadata(sessionMetadata);
         }
     }
 
-    public async togglePinSession(id: string) {
-        const sessionMetadata = Storage.getSessionMetadata();
+    public async togglePinSession(id: string): Promise<void> {
+        await this.ensureInitialized();
+        const sessionMetadata = await this.options.sessionStore.getSessionMetadata();
         const index = sessionMetadata.findIndex(s => s.id === id);
         if (index >= 0) {
             sessionMetadata[index].isPinned = !sessionMetadata[index].isPinned;
-            Storage.saveSessionMetadata(sessionMetadata);
+            await this.options.sessionStore.saveSessionMetadata(sessionMetadata);
         }
     }
 
     public async handleMessage(text: string, callbacks?: MarieCallbacks): Promise<string> {
+        await this.ensureInitialized();
         this.initializeProvider();
+
         if (!this.provider) {
-            return "Please configure your API Key. Set ANTHROPIC_API_KEY, OPENROUTER_API_KEY, or CEREBRAS_API_KEY environment variable, or use 'marie config' command.";
+            return "Please configure your API key for the selected provider.";
         }
 
-        const lastTelemetry = Storage.getLastTelemetry();
+        const lastTelemetry = await this.options.sessionStore.getLastTelemetry();
         const originatingSessionId = this.currentSessionId;
         const run: RunTelemetry = {
             runId: `run_${Date.now()}`,
@@ -247,30 +238,18 @@ export class MarieCLI {
             onToolDelta: (delta) => callbacks?.onToolDelta?.(delta, run.runId, originatingSessionId),
             onEvent: (event) => {
                 (event as any).originatingSessionId = originatingSessionId;
+                if (event.type === 'progress_update') {
+                    this.options.onProgressEvent?.(event);
+                }
                 callbacks?.onEvent?.(event);
             }
         }, run);
-        this.currentRun = run;
-        this.automationService.setCurrentRun(run);
 
-        const originalOnEvent = callbacks?.onEvent;
-        callbacks = {
-            ...callbacks,
-            onEvent: (event) => {
-                if (event.type === 'progress_update') {
-                    this.joyService.emitRunProgress(event as any);
-                }
-                originalOnEvent?.(event);
-            }
-        };
+        this.currentRun = run;
+        this.options.automationService.setCurrentRun(run);
 
         const approvalRequester = async (name: string, input: any, diff?: { old: string, new: string }): Promise<boolean> => {
-            const config = Storage.getConfig();
-            const autonomyMode = config.autonomyMode
-                || (config.requireApproval === false ? 'high' : 'balanced');
-
-            // Full YOLO: bypass all approval gates.
-            if (autonomyMode === 'yolo') {
+            if (this.options.shouldBypassApprovals?.()) {
                 return true;
             }
 
@@ -306,7 +285,6 @@ export class MarieCLI {
             this.abortController.abort();
         }
         this.abortController = new AbortController();
-
         const runStartTime = Date.now();
 
         try {
@@ -318,7 +296,7 @@ export class MarieCLI {
             );
 
             if (this.messages.length >= 6 && this.messages.length <= 10) {
-                const sessionMetadata = Storage.getSessionMetadata();
+                const sessionMetadata = await this.options.sessionStore.getSessionMetadata();
                 const session = sessionMetadata.find(s => s.id === this.currentSessionId);
                 if (session && (session.title === 'New Session' || session.title.length > 50)) {
                     this.summarizeSession(this.currentSessionId).catch(console.error);
@@ -335,11 +313,11 @@ export class MarieCLI {
         }
     }
 
-    private async summarizeSession(id: string) {
+    private async summarizeSession(id: string): Promise<void> {
         this.initializeProvider();
         if (!this.provider) return;
 
-        const historyMap = Storage.getSessions();
+        const historyMap = await this.options.sessionStore.getSessions();
         const messages = historyMap[id] || [];
         if (messages.length < 2) return;
 
@@ -355,7 +333,7 @@ export class MarieCLI {
 
             if (summary && typeof summary === 'string' && summary.length < 60) {
                 await this.renameSession(id, summary.trim().replace(/^"|"$/g, ''));
-            } else if (summary && summary.length < 60) {
+            } else if (summary && String(summary).length < 60) {
                 const text = StringUtils.extractText(summary).trim();
                 await this.renameSession(id, text.replace(/^"|"$/g, ''));
             }
@@ -364,7 +342,7 @@ export class MarieCLI {
         }
     }
 
-    public handleToolApproval(requestId: string, approved: boolean) {
+    public handleToolApproval(requestId: string, approved: boolean): void {
         const resolve = this.pendingApprovals.get(requestId);
         if (resolve) {
             resolve(approved);
@@ -372,32 +350,34 @@ export class MarieCLI {
         }
     }
 
-    public async clearCurrentSession() {
+    public async clearCurrentSession(): Promise<void> {
+        await this.ensureInitialized();
         this.messages = [];
         await this.saveHistory();
     }
 
-    public stopGeneration() {
+    public stopGeneration(): void {
         if (this.abortController) {
             this.abortController.abort();
             this.abortController = null;
         }
-        for (const [id, resolve] of this.pendingApprovals) {
+        for (const [, resolve] of this.pendingApprovals) {
             resolve(false);
         }
         this.pendingApprovals.clear();
     }
 
-    public updateSettings() {
+    public updateSettings(): void {
         this.initializeProvider();
     }
 
-    public async getModels() {
+    public async getModels(): Promise<{ id: string, name: string }[]> {
+        await this.ensureInitialized();
         this.initializeProvider();
         return this.provider?.listModels() || [];
     }
 
-    public getMessages() {
+    public getMessages(): any[] {
         return this.messages;
     }
 
@@ -409,12 +389,10 @@ export class MarieCLI {
         return this.currentRun;
     }
 
-    public dispose() {
+    public dispose(): void {
         this.stopGeneration();
-        if (this.automationService?.dispose) {
-            this.automationService.dispose();
-        }
-        for (const [id, resolve] of this.pendingApprovals) {
+        this.options.automationService.dispose?.();
+        for (const [, resolve] of this.pendingApprovals) {
             resolve(false);
         }
         this.pendingApprovals.clear();

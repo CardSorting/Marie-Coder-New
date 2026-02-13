@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MarieCLI } from '../../cli/MarieCLI.js';
+import { MarieCLI } from '../../monolith/adapters/CliMarieAdapter.js';
 import { Session } from '../types/cli.js';
 
 interface UseSessionsOptions {
@@ -11,10 +11,10 @@ export function useSessions(options: UseSessionsOptions) {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
-    const refreshSessions = useCallback(() => {
+    const refreshSessions = useCallback(async () => {
         if (!marie) return;
 
-        const metadata = marie.listSessions();
+        const metadata = await marie.listSessions();
         const currentId = marie.getCurrentSessionId();
 
         setSessions(metadata.map(m => ({
@@ -29,13 +29,13 @@ export function useSessions(options: UseSessionsOptions) {
     }, [marie]);
 
     useEffect(() => {
-        refreshSessions();
+        refreshSessions().catch(() => undefined);
     }, [refreshSessions]);
 
     const createSession = useCallback(async () => {
         if (!marie) return;
         const id = await marie.createSession();
-        refreshSessions();
+        await refreshSessions();
         return id;
     }, [marie, refreshSessions]);
 
@@ -43,25 +43,25 @@ export function useSessions(options: UseSessionsOptions) {
         if (!marie || id === currentSessionId) return;
         await marie.loadSession(id);
         setCurrentSessionId(id);
-        refreshSessions();
+        await refreshSessions();
     }, [marie, currentSessionId, refreshSessions]);
 
     const deleteSession = useCallback(async (id: string) => {
         if (!marie) return;
         await marie.deleteSession(id);
-        refreshSessions();
+        await refreshSessions();
     }, [marie, refreshSessions]);
 
     const renameSession = useCallback(async (id: string, newTitle: string) => {
         if (!marie) return;
         await marie.renameSession(id, newTitle);
-        refreshSessions();
+        await refreshSessions();
     }, [marie, refreshSessions]);
 
     const togglePinSession = useCallback(async (id: string) => {
         if (!marie) return;
         await marie.togglePinSession(id);
-        refreshSessions();
+        await refreshSessions();
     }, [marie, refreshSessions]);
 
     return {

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { Marie } from "./Marie.js";
+import { Marie } from "./monolith/adapters/VscodeMarieAdapter.js";
 import { JoyService } from "./services/JoyService.js";
 import { JoyLogService } from "./services/JoyLogService.js";
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { MarieCLI } from '../../cli/MarieCLI.js';
+import { MarieCLI } from '../../monolith/adapters/CliMarieAdapter.js';
 import { MarieCallbacks } from '../../domain/marie/MarieTypes.js';
 import { Message, ToolCall, ApprovalRequest, StreamingState } from '../types/cli.js';
 

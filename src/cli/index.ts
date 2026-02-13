@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as readline from 'readline';
 import * as process from 'process';
-import { MarieCLI } from './MarieCLI.js';
+import { MarieCLI } from '../monolith/adapters/CliMarieAdapter.js';
 import { Storage } from './storage.js';
 
 const ANSI = {
@@ -167,7 +167,7 @@ class MarieTerminal {
                 console.log(`${ANSI.green}✓ Started new session${ANSI.reset}`);
                 break;
             case 'sessions':
-                this.listSessions();
+                await this.listSessions();
                 break;
             case 'load':
                 if (args[0]) {
@@ -210,8 +210,8 @@ class MarieTerminal {
         console.log();
     }
 
-    private listSessions() {
-        const sessions = this.marie.listSessions();
+    private async listSessions() {
+        const sessions = await this.marie.listSessions();
         console.log();
         if (sessions.length === 0) {
             console.log(`${ANSI.gray}No saved sessions${ANSI.reset}`);
