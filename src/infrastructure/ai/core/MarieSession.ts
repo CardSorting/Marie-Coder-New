@@ -2,9 +2,11 @@ import { AIProvider, AIStreamEvent } from "../providers/AIProvider.js";
 import { MarieProgressTracker } from "./MarieProgressTracker.js";
 import { ConfigService } from "../../config/ConfigService.js";
 import { ContextManager } from "../context/ContextManager.js";
-import { SYSTEM_PROMPT } from "../../../prompts.js";
+import { SYSTEM_CONTINUATION_PROMPT, SYSTEM_PROMPT } from "../../../prompts.js";
 import { MarieResponse } from "./MarieResponse.js";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
+
+export type MarieSessionPromptProfile = 'full' | 'continuation';
 
 /**
  * Manages a single AI chat session with a reactive streaming model.
@@ -16,8 +18,15 @@ export class MarieSession {
         private saveHistory: (telemetry?: any) => Promise<void>,
         private messages: any[],
         private tracker?: MarieProgressTracker,
-        private providerFactory?: (type: string) => AIProvider
+        private providerFactory?: (type: string) => AIProvider,
+        private promptProfile: MarieSessionPromptProfile = 'full'
     ) { }
+
+    private resolveSystemPrompt(): string {
+        return this.promptProfile === 'continuation'
+            ? SYSTEM_CONTINUATION_PROMPT
+            : SYSTEM_PROMPT;
+    }
 
     public async *executeLoop(messages: any[], signal?: AbortSignal, councilSnapshot?: {
         strategy: string; mood: string; flowState: number;
@@ -49,7 +58,7 @@ export class MarieSession {
                 model: ConfigService.getModel(),
                 max_tokens: 2048,
                 messages: managedMessages,
-                system: SYSTEM_PROMPT,
+                system: this.resolveSystemPrompt(),
                 tools: this.toolRegistry.getTools(),
             } as any;
 
@@ -184,7 +193,7 @@ export class MarieSession {
             model: ConfigService.getModel(),
             max_tokens: 2048,
             messages: await ContextManager.manage(this.messages, this.provider, snapshot),
-            system: SYSTEM_PROMPT,
+            system: this.resolveSystemPrompt(),
             tools: this.toolRegistry.getTools(),
         } as any;
 

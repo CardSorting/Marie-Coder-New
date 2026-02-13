@@ -1,7 +1,7 @@
 import { AIProvider, AIStreamEvent } from "../providers/AIProvider.js";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
 import { MarieProgressTracker } from "./MarieProgressTracker.js";
-import { MarieSession } from "./MarieSession.js";
+import { MarieSession, MarieSessionPromptProfile } from "./MarieSession.js";
 import { MarieEventDispatcher } from "./MarieEventDispatcher.js";
 import { MarieToolProcessor } from "./MarieToolProcessor.js";
 import { MarieAuditor } from "../agents/MarieAuditor.js";
@@ -24,6 +24,10 @@ import { AgentStreamManager } from "./AgentStreamManager.js";
 import { AgentMergeArbiter } from "./AgentMergeArbiter.js";
 import { AgentEnvelope, AgentIntentRequest, AgentTurnContext } from "./AgentStreamContracts.js";
 import { ConfigService } from "../../config/ConfigService.js";
+
+export function getPromptProfileForDepth(depth: number): MarieSessionPromptProfile {
+    return depth > 0 ? 'continuation' : 'full';
+}
 
 /**
  * Entry point for the AI Engine. Thin orchestrator of modular units.
@@ -308,7 +312,23 @@ export class MarieEngine {
             }
         };
 
-        const session = new MarieSession(this.provider, this.toolRegistry, saveHistory, messages, tracker, this.providerFactory);
+        const promptProfile = getPromptProfileForDepth(depth);
+        tracker.emitEvent({
+            type: 'reasoning',
+            runId: tracker.getRun().runId,
+            text: `🧭 Prompt Profile: ${promptProfile} (depth=${depth})`,
+            elapsedMs: tracker.elapsedMs()
+        });
+
+        const session = new MarieSession(
+            this.provider,
+            this.toolRegistry,
+            saveHistory,
+            messages,
+            tracker,
+            this.providerFactory,
+            promptProfile
+        );
         try {
             const stream = session.executeLoop(messages, signal, snapshot);
             for await (const event of stream) {
