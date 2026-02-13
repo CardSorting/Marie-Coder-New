@@ -1,0 +1,144 @@
+:root {
+    color-scheme: light dark;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    background: var(--vscode-editor-background);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+}
+
+.left {
+    border-right: 1px solid var(--vscode-panel-border);
+    padding: 10px;
+    overflow: auto;
+}
+
+.right {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    height: 100vh;
+}
+
+.top {
+    padding: 10px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.muted {
+    opacity: 0.7;
+    font-size: 12px;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.session {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px;
+    border: 1px solid var(--vscode-panel-border);
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}
+
+.session.active {
+    background: var(--vscode-list-activeSelectionBackground);
+}
+
+.chat {
+    overflow: auto;
+    padding: 12px;
+}
+
+.msg {
+    margin-bottom: 10px;
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.msg pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.msg.user {
+    border-color: var(--vscode-button-background);
+}
+
+.role {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.composer {
+    border-top: 1px solid var(--vscode-panel-border);
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+textarea {
+    width: 100%;
+    min-height: 60px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+}
+
+button,
+select {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.secondary {
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-panel-border);
+}
+
+.approval {
+    border-top: 1px solid var(--vscode-panel-border);
+    padding: 10px;
+    background: var(--vscode-editor-background);
+}
+
+.approval pre {
+    max-height: 160px;
+    overflow: auto;
+    white-space: pre-wrap;
+}

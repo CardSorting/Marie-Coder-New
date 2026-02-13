@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "description": "Marie - AI coding agent for VS Code and CLI",
   "publisher": "cardsorting",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CardSorting/Marie-Coder-New.git"
+  },
   "main": "dist/extension.cjs",
   "engines": {
     "vscode": "^1.105.0",
@@ -79,6 +83,7 @@
     "marked": "^12.0.0",
     "marked-terminal": "^7.0.0",
     "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "shiki": "^1.0.0",
     "simple-git": "^3.22.0",
     "strip-ansi": "^7.1.0",
@@ -89,6 +94,7 @@
     "esbuild": "^0.25.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.105.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.3.0"

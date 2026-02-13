@@ -30,6 +30,16 @@ class MarieWebviewHost {
             ],
         };
 
+        const scriptDiskPath = vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview-ui", "main.js");
+        vscode.workspace.fs.stat(scriptDiskPath).then(
+            () => undefined,
+            () => {
+                void vscode.window.showErrorMessage(
+                    "Marie webview bundle missing (dist/webview-ui/main.js). Run `npm run build` and reinstall the extension."
+                );
+            }
+        );
+
         webview.html = this.getHtml(webview);
         webview.onDidReceiveMessage((message) => this.onMessage(message));
 
@@ -223,11 +233,17 @@ class MarieWebviewHost {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'nonce-${nonce}';" />
     <title>Marie</title>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app" style="padding:12px;font-family:var(--vscode-font-family);color:var(--vscode-foreground);">Loading Marie UI…</div>
+    <script nonce="${nonce}">
+      try {
+        const el = document.getElementById('app');
+        if (el) el.textContent = 'Marie script bootstrapping…';
+      } catch {}
+    </script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
