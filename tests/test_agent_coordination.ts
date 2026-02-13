@@ -1,8 +1,8 @@
 import * as assert from 'assert';
-import { MarieCouncil } from '../src/infrastructure/ai/council/MarieCouncil';
-import { AgentCoordination, AgentContext, AgentConflict } from '../src/infrastructure/ai/council/AgentCoordination';
-import { YOLOCouncilIntegration, YOLOInfluenceMetrics } from '../src/infrastructure/ai/council/YOLOCouncilIntegration';
-import { YoloTelemetry, CouncilStrategy } from '../src/infrastructure/ai/council/MarieCouncilTypes';
+import { MarieCouncil } from '../src/monolith/infrastructure/ai/council/MarieCouncil';
+import { AgentCoordination, AgentContext, AgentConflict } from '../src/monolith/infrastructure/ai/council/AgentCoordination';
+import { YOLOCouncilIntegration, YOLOInfluenceMetrics } from '../src/monolith/infrastructure/ai/council/YOLOCouncilIntegration';
+import { YoloTelemetry, CouncilStrategy } from '../src/monolith/infrastructure/ai/council/MarieCouncilTypes';
 
 // Helper to create a YoloTelemetry object
 function createYOLODecision(

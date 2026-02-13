@@ -2,7 +2,7 @@ import { AIProvider, AIStreamEvent } from "../providers/AIProvider.js";
 import { MarieProgressTracker } from "./MarieProgressTracker.js";
 import { ConfigService } from "../../config/ConfigService.js";
 import { ContextManager } from "../context/ContextManager.js";
-import { SYSTEM_CONTINUATION_PROMPT, SYSTEM_PROMPT } from "../../../prompts.js";
+import { SYSTEM_CONTINUATION_PROMPT, SYSTEM_PROMPT } from "../../../../prompts.js";
 import { MarieResponse } from "./MarieResponse.js";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
 

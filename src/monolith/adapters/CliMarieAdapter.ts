@@ -1,12 +1,12 @@
-import { AnthropicProvider } from '../../infrastructure/ai/providers/AnthropicProvider.js';
-import { OpenRouterProvider } from '../../infrastructure/ai/providers/OpenRouterProvider.js';
-import { CerebrasProvider } from '../../infrastructure/ai/providers/CerebrasProvider.js';
-import { AIProvider } from '../../infrastructure/ai/providers/AIProvider.js';
-import { MarieCallbacks, RunTelemetry } from '../../domain/marie/MarieTypes.js';
-import { registerMarieToolsCLI } from '../../cli/MarieToolDefinitionsCLI.js';
-import { Storage, SessionMetadata } from '../../cli/storage.js';
-import { JoyServiceCLI } from '../../cli/services/JoyServiceCLI.js';
-import { JoyAutomationServiceCLI } from '../../cli/services/JoyAutomationServiceCLI.js';
+import { AnthropicProvider } from '../infrastructure/ai/providers/AnthropicProvider.js';
+import { OpenRouterProvider } from '../infrastructure/ai/providers/OpenRouterProvider.js';
+import { CerebrasProvider } from '../infrastructure/ai/providers/CerebrasProvider.js';
+import { AIProvider } from '../infrastructure/ai/providers/AIProvider.js';
+import { MarieCallbacks, RunTelemetry } from '../domain/marie/MarieTypes.js';
+import { registerMarieToolsCLI } from '../cli/MarieToolDefinitionsCLI.js';
+import { Storage, SessionMetadata } from '../cli/storage.js';
+import { JoyServiceCLI } from '../cli/services/JoyServiceCLI.js';
+import { JoyAutomationServiceCLI } from '../cli/services/JoyAutomationServiceCLI.js';
 import { MarieRuntime } from '../runtime/MarieRuntime.js';
 import { MarieProviderType, RuntimeConfigPort, RuntimeSessionStorePort } from '../runtime/types.js';
 

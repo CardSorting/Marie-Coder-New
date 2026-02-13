@@ -1,4 +1,4 @@
-import { PrefixTree } from "./plumbing/utils/PrefixTree.js";
+import { PrefixTree } from "./monolith/plumbing/utils/PrefixTree.js";
 
 console.log("Starting PrefixTree Tests...\n");
 

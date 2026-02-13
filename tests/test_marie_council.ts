@@ -1,7 +1,7 @@
 import * as assert from 'assert';
-import { MarieCouncil, CouncilStrategy, CouncilMood } from '../src/infrastructure/ai/council/MarieCouncil';
-import { MarieYOLO } from '../src/infrastructure/ai/agents/MarieYOLO';
-import { AIProvider } from '../src/infrastructure/ai/providers/AIProvider';
+import { MarieCouncil, CouncilStrategy, CouncilMood } from '../src/monolith/infrastructure/ai/council/MarieCouncil';
+import { MarieYOLO } from '../src/monolith/infrastructure/ai/agents/MarieYOLO';
+import { AIProvider } from '../src/monolith/infrastructure/ai/providers/AIProvider';
 
 async function testConsensus() {
     console.log('🧪 Testing Council Consensus...');

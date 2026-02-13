@@ -1,10 +1,10 @@
-import { ToolRegistry } from "../../infrastructure/tools/ToolRegistry.js";
-import { MarieEngine } from "../../infrastructure/ai/core/MarieEngine.js";
-import { MarieProgressTracker } from "../../infrastructure/ai/core/MarieProgressTracker.js";
-import { MarieResponse } from "../../infrastructure/ai/core/MarieResponse.js";
-import { StringUtils } from "../../plumbing/utils/StringUtils.js";
-import { MarieCallbacks, RunTelemetry } from "../../domain/marie/MarieTypes.js";
-import { AIProvider } from "../../infrastructure/ai/providers/AIProvider.js";
+import { ToolRegistry } from "../infrastructure/tools/ToolRegistry.js";
+import { MarieEngine } from "../infrastructure/ai/core/MarieEngine.js";
+import { MarieProgressTracker } from "../infrastructure/ai/core/MarieProgressTracker.js";
+import { MarieResponse } from "../infrastructure/ai/core/MarieResponse.js";
+import { StringUtils } from "../plumbing/utils/StringUtils.js";
+import { MarieCallbacks, RunTelemetry } from "../domain/marie/MarieTypes.js";
+import { AIProvider } from "../infrastructure/ai/providers/AIProvider.js";
 import {
     MarieProviderType,
     RuntimeAutomationPort,

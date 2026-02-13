@@ -4,7 +4,7 @@ import { MarieProgressTracker } from "../core/MarieProgressTracker.js";
 import { MarieSession } from "../core/MarieSession.js";
 import { MarieToolProcessor } from "../core/MarieToolProcessor.js";
 import { MarieEventDispatcher } from "../core/MarieEventDispatcher.js";
-import { AUDITOR_SYSTEM_PROMPT } from "../../../prompts.js";
+import { AUDITOR_SYSTEM_PROMPT } from "../../../../prompts.js";
 import { ConfigService } from "../../config/ConfigService.js";
 import { MarieCouncil } from "../council/MarieCouncil.js";
 import { StringUtils } from "../../../plumbing/utils/StringUtils.js";

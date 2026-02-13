@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { render } from 'ink';
 import { App } from './components/App.js';
 import { SetupWizard } from './components/SetupWizard.js';
-import { Storage } from '../cli/storage.js';
+import { Storage } from '../monolith/cli/storage.js';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';

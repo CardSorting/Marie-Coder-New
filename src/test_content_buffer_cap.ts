@@ -2,8 +2,8 @@
  * Phase 9 Content Buffer Cap Regression Test
  * Validates that MarieEngine respects the 1MB contentBuffer limit during streaming.
  */
-import { MarieProgressTracker } from "./infrastructure/ai/core/MarieProgressTracker.js";
-import { RunTelemetry } from "./domain/marie/MarieTypes.js";
+import { MarieProgressTracker } from "./monolith/infrastructure/ai/core/MarieProgressTracker.js";
+import { RunTelemetry } from "./monolith/domain/marie/MarieTypes.js";
 
 async function testContentBufferCap() {
     console.log("🧪 Testing contentBuffer 1MB hard cap...\n");

@@ -1,13 +1,13 @@
 import * as vscode from "vscode";
-import { AnthropicProvider } from "../../infrastructure/ai/providers/AnthropicProvider.js";
-import { OpenRouterProvider } from "../../infrastructure/ai/providers/OpenRouterProvider.js";
-import { CerebrasProvider } from "../../infrastructure/ai/providers/CerebrasProvider.js";
-import { AIProvider } from "../../infrastructure/ai/providers/AIProvider.js";
-import { MarieCallbacks, RunTelemetry } from "../../domain/marie/MarieTypes.js";
-import { registerMarieTools } from "../../infrastructure/tools/MarieToolDefinitions.js";
-import { JoyAutomationService } from "../../services/JoyAutomationService.js";
-import { JoyService } from "../../services/JoyService.js";
-import { ConfigService } from "../../infrastructure/config/ConfigService.js";
+import { AnthropicProvider } from "../infrastructure/ai/providers/AnthropicProvider.js";
+import { OpenRouterProvider } from "../infrastructure/ai/providers/OpenRouterProvider.js";
+import { CerebrasProvider } from "../infrastructure/ai/providers/CerebrasProvider.js";
+import { AIProvider } from "../infrastructure/ai/providers/AIProvider.js";
+import { MarieCallbacks, RunTelemetry } from "../domain/marie/MarieTypes.js";
+import { registerMarieTools } from "../infrastructure/tools/MarieToolDefinitions.js";
+import { JoyAutomationService } from "../services/JoyAutomationService.js";
+import { JoyService } from "../services/JoyService.js";
+import { ConfigService } from "../infrastructure/config/ConfigService.js";
 import { MarieRuntime } from "../runtime/MarieRuntime.js";
 import { MarieProviderType, RuntimeConfigPort, RuntimeSessionStorePort, SessionMetadata } from "../runtime/types.js";
 

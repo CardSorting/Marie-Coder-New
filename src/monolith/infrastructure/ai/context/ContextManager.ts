@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import Anthropic from '@anthropic-ai/sdk';
 import { ConfigService } from "../../config/ConfigService.js";
-import { SUMMARIZATION_SYSTEM_PROMPT, SUMMARIZATION_USER_PROMPT } from "../../../prompts.js";
+import { SUMMARIZATION_SYSTEM_PROMPT, SUMMARIZATION_USER_PROMPT } from "../../../../prompts.js";
 import { AIProvider } from "../providers/AIProvider.js";
 import { getErrorMessage } from "../../../plumbing/utils/ErrorUtils.js";
 import { StringUtils } from "../../../plumbing/utils/StringUtils.js";

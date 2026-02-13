@@ -1,5 +1,5 @@
 import * as fs from 'fs/promises';
-import { getGratitudeMessage, getCelebrationMessage } from '../../prompts.js';
+import { getGratitudeMessage, getCelebrationMessage } from '../../../prompts.js';
 import { detectMigrationNeeds } from '../../domain/joy/JoyTools.js';
 
 export interface HealthReport {

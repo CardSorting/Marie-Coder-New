@@ -1,4 +1,4 @@
-import { RunTelemetry } from '../../domain/marie/MarieTypes.js';
+import { RunTelemetry } from '../../monolith/domain/marie/MarieTypes.js';
 
 export interface Message {
     id: string;

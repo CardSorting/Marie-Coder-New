@@ -1,5 +1,5 @@
 import { AIProvider } from "../providers/AIProvider.js";
-import { MARIE_ISO_9001_SYSTEM_PROMPT } from "../../../prompts.js";
+import { MARIE_ISO_9001_SYSTEM_PROMPT } from "../../../../prompts.js";
 import { ConfigService } from "../../config/ConfigService.js";
 import { MarieResponse } from "../core/MarieResponse.js";
 

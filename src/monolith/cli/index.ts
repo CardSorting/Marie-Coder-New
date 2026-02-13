@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as readline from 'readline';
 import * as process from 'process';
-import { MarieCLI } from '../monolith/adapters/CliMarieAdapter.js';
+import { MarieCLI } from '../adapters/CliMarieAdapter.js';
 import { Storage } from './storage.js';
 
 const ANSI = {

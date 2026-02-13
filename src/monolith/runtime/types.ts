@@ -1,5 +1,5 @@
-import { MarieCallbacks, RunTelemetry } from "../../domain/marie/MarieTypes.js";
-import { AIProvider } from "../../infrastructure/ai/providers/AIProvider.js";
+import { MarieCallbacks, RunTelemetry } from "../domain/marie/MarieTypes.js";
+import { AIProvider } from "../infrastructure/ai/providers/AIProvider.js";
 
 export type MarieProviderType = 'anthropic' | 'openrouter' | 'cerebras';
 

@@ -1,5 +1,5 @@
-import { StreamTagDetector } from "./plumbing/utils/StreamTagDetector.js";
-import { OpenRouterStreamParser } from "./infrastructure/ai/providers/OpenRouterStreamParser.js";
+import { StreamTagDetector } from "./monolith/plumbing/utils/StreamTagDetector.js";
+import { OpenRouterStreamParser } from "./monolith/infrastructure/ai/providers/OpenRouterStreamParser.js";
 
 async function runTests() {
     console.log("Starting Streaming Tests...\n");

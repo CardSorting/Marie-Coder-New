@@ -1,10 +1,10 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ToolRegistry } from '../../src/infrastructure/tools/ToolRegistry.js';
-import { registerMarieToolsCLI } from '../../src/cli/MarieToolDefinitionsCLI.js';
-import { JoyAutomationServiceCLI } from '../../src/cli/services/JoyAutomationServiceCLI.js';
-import { JoyServiceCLI } from '../../src/cli/services/JoyServiceCLI.js';
+import { ToolRegistry } from '../../src/monolith/infrastructure/tools/ToolRegistry.js';
+import { registerMarieToolsCLI } from '../../src/monolith/cli/MarieToolDefinitionsCLI.js';
+import { JoyAutomationServiceCLI } from '../../src/monolith/cli/services/JoyAutomationServiceCLI.js';
+import { JoyServiceCLI } from '../../src/monolith/cli/services/JoyServiceCLI.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

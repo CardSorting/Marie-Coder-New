@@ -1,9 +1,9 @@
-import { AgentIntentScheduler } from "./infrastructure/ai/core/AgentIntentScheduler.js";
-import { AgentMergeArbiter } from "./infrastructure/ai/core/AgentMergeArbiter.js";
-import { AgentStreamPolicyEngine } from "./infrastructure/ai/core/AgentStreamPolicyEngine.js";
-import { AgentStreamManager } from "./infrastructure/ai/core/AgentStreamManager.js";
-import { ConfigService } from "./infrastructure/config/ConfigService.js";
-import { AgentIntentRequest, AgentTurnContext, SpawnPlan } from "./infrastructure/ai/core/AgentStreamContracts.js";
+import { AgentIntentScheduler } from "./monolith/infrastructure/ai/core/AgentIntentScheduler.js";
+import { AgentMergeArbiter } from "./monolith/infrastructure/ai/core/AgentMergeArbiter.js";
+import { AgentStreamPolicyEngine } from "./monolith/infrastructure/ai/core/AgentStreamPolicyEngine.js";
+import { AgentStreamManager } from "./monolith/infrastructure/ai/core/AgentStreamManager.js";
+import { ConfigService } from "./monolith/infrastructure/config/ConfigService.js";
+import { AgentIntentRequest, AgentTurnContext, SpawnPlan } from "./monolith/infrastructure/ai/core/AgentStreamContracts.js";
 
 function assert(condition: boolean, message: string): void {
     if (!condition) throw new Error(message);

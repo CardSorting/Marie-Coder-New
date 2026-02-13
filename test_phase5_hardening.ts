@@ -1,4 +1,4 @@
-import { StringUtils } from "./src/plumbing/utils/StringUtils";
+import { StringUtils } from "./src/monolith/plumbing/utils/StringUtils";
 
 async function testPhase5() {
     console.log("🚀 Starting Phase 5 Verification...");

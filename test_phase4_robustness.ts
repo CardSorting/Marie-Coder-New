@@ -1,5 +1,5 @@
-import { MarieResponse } from "./src/infrastructure/ai/MarieResponse";
-import { MarieToolProcessor } from "./src/infrastructure/ai/MarieToolProcessor";
+import { MarieResponse } from "./src/monolith/infrastructure/ai/MarieResponse";
+import { MarieToolProcessor } from "./src/monolith/infrastructure/ai/MarieToolProcessor";
 
 // Simplified Tool Registry Mock
 const mockToolRegistry = {

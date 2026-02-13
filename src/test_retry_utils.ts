@@ -1,4 +1,4 @@
-import { withRetry, RetryConfig } from "./plumbing/utils/RetryUtils.js";
+import { withRetry, RetryConfig } from "./monolith/plumbing/utils/RetryUtils.js";
 
 console.log("Starting RetryUtils Tests...\n");
 

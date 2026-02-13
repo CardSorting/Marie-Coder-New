@@ -10,7 +10,7 @@ import { useSessions } from '../hooks/useSessions.js';
 import { useGit } from '../hooks/useGit.js';
 import { ViewMode } from '../types/cli.js';
 import { marieTheme } from '../styles/theme.js';
-import { Storage } from '../../cli/storage.js';
+import { Storage } from '../../monolith/cli/storage.js';
 import { SetupWizard } from './SetupWizard.js';
 import { Banner } from './Banner.js';
 

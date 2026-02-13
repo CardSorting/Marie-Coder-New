@@ -1,7 +1,7 @@
-import { MarieCouncil } from "./src/infrastructure/ai/MarieCouncil";
-import { MarieStrategist } from "./src/infrastructure/ai/MarieStrategist";
-import { MarieAgentSwarm } from "./src/infrastructure/ai/MarieAgentSwarm";
-import { MarieProgressTracker } from "./src/infrastructure/ai/MarieProgressTracker";
+import { MarieCouncil } from "./src/monolith/infrastructure/ai/MarieCouncil";
+import { MarieStrategist } from "./src/monolith/infrastructure/ai/MarieStrategist";
+import { MarieAgentSwarm } from "./src/monolith/infrastructure/ai/MarieAgentSwarm";
+import { MarieProgressTracker } from "./src/monolith/infrastructure/ai/MarieProgressTracker";
 
 class MockAuditor {
     public async audit() { return null; }

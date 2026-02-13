@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { Storage } from '../../cli/storage.js';
+import { Storage } from '../../monolith/cli/storage.js';
 import { marieTheme } from '../styles/theme.js';
 import { Banner } from './Banner.js';
 

@@ -6,7 +6,7 @@ import { getStringArg, getArrayArg } from "./ToolUtils.js";
 import { withTimeout } from "../../plumbing/utils/TimeoutUtils.js";
 import { writeFile, deleteFile } from "../../plumbing/filesystem/FileService.js";
 import { logGratitude, generateTidyChecklist, foldCode, cherishFile, generateJoyDashboard } from "../../domain/joy/JoyTools.js";
-import { getLettingGoMessage } from "../../prompts.js";
+import { getLettingGoMessage } from "../../../prompts.js";
 import { gitStatus, getStagedDiff, getUnstagedDiff, getFileHistory, logReflection } from "../../plumbing/git/GitService.js";
 import { SymbolService } from "../../plumbing/lsp/SymbolService.js";
 import { DependencyService } from "../../plumbing/analysis/DependencyService.js";

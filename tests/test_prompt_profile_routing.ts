@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import { SYSTEM_CONTINUATION_PROMPT, SYSTEM_PROMPT } from '../src/prompts.ts';
-import { MarieSession } from '../src/infrastructure/ai/core/MarieSession.ts';
-import { getPromptProfileForDepth } from '../src/infrastructure/ai/core/MarieEngine.ts';
-import { ToolRegistry } from '../src/infrastructure/tools/ToolRegistry.ts';
-import type { AIProvider, AIRequestParams, AIResponse, AIStreamEvent } from '../src/infrastructure/ai/providers/AIProvider.ts';
+import { MarieSession } from '../src/monolith/infrastructure/ai/core/MarieSession.ts';
+import { getPromptProfileForDepth } from '../src/monolith/infrastructure/ai/core/MarieEngine.ts';
+import { ToolRegistry } from '../src/monolith/infrastructure/tools/ToolRegistry.ts';
+import type { AIProvider, AIRequestParams, AIResponse, AIStreamEvent } from '../src/monolith/infrastructure/ai/providers/AIProvider.ts';
 
 class CaptureProvider implements AIProvider {
     public capturedSystems: string[] = [];

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
-import { JoyServiceCLI, JoyScoreEvent, RunProgressEvent, LettingGoRequest } from '../../src/cli/services/JoyServiceCLI.js';
-import { JoyAutomationServiceCLI } from '../../src/cli/services/JoyAutomationServiceCLI.js';
-import { RunTelemetry } from '../../src/domain/marie/MarieTypes.js';
+import { JoyServiceCLI, JoyScoreEvent, RunProgressEvent, LettingGoRequest } from '../../src/monolith/cli/services/JoyServiceCLI.js';
+import { JoyAutomationServiceCLI } from '../../src/monolith/cli/services/JoyAutomationServiceCLI.js';
+import { RunTelemetry } from '../../src/monolith/domain/marie/MarieTypes.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 

@@ -1,8 +1,8 @@
 import * as assert from 'assert';
-import { MarieEngine } from '../src/infrastructure/ai/core/MarieEngine';
-import { MarieProgressTracker } from '../src/infrastructure/ai/core/MarieProgressTracker';
-import { AIProvider, AIStreamEvent } from '../src/infrastructure/ai/providers/AIProvider';
-import { ToolRegistry } from '../src/infrastructure/tools/ToolRegistry';
+import { MarieEngine } from '../src/monolith/infrastructure/ai/core/MarieEngine';
+import { MarieProgressTracker } from '../src/monolith/infrastructure/ai/core/MarieProgressTracker';
+import { AIProvider, AIStreamEvent } from '../src/monolith/infrastructure/ai/providers/AIProvider';
+import { ToolRegistry } from '../src/monolith/infrastructure/tools/ToolRegistry';
 
 class MockOmniProvider implements Partial<AIProvider> {
     public createMessageStream(params: any, onUpdate: (event: AIStreamEvent) => void): Promise<any> {
