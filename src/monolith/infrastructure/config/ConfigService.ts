@@ -4,7 +4,7 @@
 import type * as vscodeTypes from 'vscode';
 import { createRequire } from 'module';
 
-const nodeRequire = createRequire(import.meta.url);
+const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let vscodeModule: typeof vscodeTypes | null = null;

@@ -1,13 +1,55 @@
 {
   "name": "marie",
+  "displayName": "Marie",
   "version": "0.1.0",
-  "description": "Marie - AI coding agent CLI",
-  "main": "dist/cli-new/index.js",
+  "description": "Marie - AI coding agent for VS Code and CLI",
+  "publisher": "cardsorting",
+  "main": "dist/extension.cjs",
+  "engines": {
+    "vscode": "^1.105.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:marie.start",
+    "onView:marieView"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "marie.start",
+        "title": "Marie: Start"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "marieSidebar",
+          "title": "Marie",
+          "icon": "assets/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "marieSidebar": [
+        {
+          "id": "marieView",
+          "name": "Marie",
+          "type": "webview"
+        }
+      ]
+    }
+  },
   "bin": {
     "marie": "./dist/cli-new/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/cli-new/index.js",
+    "build": "npm run build:extension && npm run build:cli",
+    "build:extension": "node esbuild.mjs --production",
+    "build:cli": "tsc && chmod +x dist/cli-new/index.js",
+    "package:extension": "npx @vscode/vsce package",
     "dev": "node --loader ts-node/esm src/cli-new/index.ts",
     "start": "node dist/cli-new/index.js",
     "test": "npm run test:cli",
@@ -26,9 +68,6 @@
   "author": "",
   "license": "Apache-2.0",
   "type": "module",
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
     "@cerebras/cerebras_cloud_sdk": "^1.64.1",
@@ -47,9 +86,10 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "esbuild": "^0.25.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
-    "@types/vscode": "^1.109.0",
+    "@types/vscode": "^1.105.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.3.0"
   }
