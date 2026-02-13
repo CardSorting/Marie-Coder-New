@@ -198,4 +198,65 @@ export class ConfigService {
         }
         return Math.max(0, Math.min(5, value));
     }
+
+    static isAgentStreamsEnabled(): boolean {
+        const vscode = getVscode();
+        if (vscode) {
+            return vscode.workspace.getConfiguration("marie").get<boolean>("agentStreamsEnabled", false);
+        }
+
+        const config = getCliConfig();
+        const fromConfig = config.agentStreamsEnabled;
+        if (typeof fromConfig === 'boolean') return fromConfig;
+
+        return process.env.MARIE_AGENT_STREAMS_ENABLED === '1';
+    }
+
+    static getAgentStreamMaxConcurrent(): number {
+        const vscode = getVscode();
+        let value = 2;
+
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("agentStreamMaxConcurrent", 2);
+        } else {
+            const config = getCliConfig();
+            if (typeof config.agentStreamMaxConcurrent === 'number') {
+                value = config.agentStreamMaxConcurrent;
+            }
+        }
+
+        return Math.max(1, Math.min(8, value));
+    }
+
+    static getAgentStreamSpawnThreshold(): number {
+        const vscode = getVscode();
+        let value = 1.25;
+
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("agentStreamSpawnThreshold", 1.25);
+        } else {
+            const config = getCliConfig();
+            if (typeof config.agentStreamSpawnThreshold === 'number') {
+                value = config.agentStreamSpawnThreshold;
+            }
+        }
+
+        return Math.max(0.25, Math.min(5, value));
+    }
+
+    static getAgentStreamTimeoutMs(): number {
+        const vscode = getVscode();
+        let value = 20000;
+
+        if (vscode) {
+            value = vscode.workspace.getConfiguration("marie").get<number>("agentStreamTimeoutMs", 20000);
+        } else {
+            const config = getCliConfig();
+            if (typeof config.agentStreamTimeoutMs === 'number') {
+                value = config.agentStreamTimeoutMs;
+            }
+        }
+
+        return Math.max(3000, Math.min(120000, value));
+    }
 }

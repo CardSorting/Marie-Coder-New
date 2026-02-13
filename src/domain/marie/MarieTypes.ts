@@ -23,6 +23,16 @@ export interface ProgressObjective {
     context?: string;
 }
 
+export type StreamOrigin = 'engine' | 'agent';
+
+export interface StreamIdentity {
+    streamId: string;
+    origin: StreamOrigin;
+    agentId?: string;
+    parentRunId?: string;
+    intent?: string;
+}
+
 export type MarieStreamEvent =
     | { type: 'run_started'; runId: string; startedAt: number }
     | { type: 'stage'; runId: string; stage: MarieRunStage; label: string; elapsedMs: number }
@@ -125,6 +135,28 @@ export type MarieStreamEvent =
         totalPasses: number;
         passFocus: string;
         passHistory?: Array<{ pass: number, summary: string, reflection: string }>;
+        elapsedMs: number;
+    }
+    | {
+        type: 'agent_stream_lifecycle';
+        runId: string;
+        streamIdentity: StreamIdentity;
+        status: 'spawned' | 'running' | 'completed' | 'cancelled' | 'failed' | 'timed_out';
+        reason?: string;
+        elapsedMs: number;
+    }
+    | {
+        type: 'agent_envelope';
+        runId: string;
+        streamIdentity: StreamIdentity;
+        envelope: {
+            decision: string;
+            confidence: number;
+            evidenceRefs?: string[];
+            recommendedActions?: string[];
+            blockingConditions?: string[];
+            summary?: string;
+        };
         elapsedMs: number;
     }
     | { type: 'approval_request'; requestId: string; toolName: string; toolInput: any; elapsedMs: number; reasoning?: string; activeObjective?: string; diff?: { old: string, new: string } }
