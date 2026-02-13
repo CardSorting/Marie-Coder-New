@@ -28,6 +28,7 @@ export interface SpawnPlan {
     score: number;
     policyAccepted: boolean;
     executionAccepted: boolean;
+    executionReason?: string;
     accepted: boolean;
     reason: string;
     tokenBudget: number;

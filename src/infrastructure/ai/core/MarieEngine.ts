@@ -730,7 +730,7 @@ export class MarieEngine {
             tracker.emitEvent({
                 type: 'reasoning',
                 runId: tracker.getRun().runId,
-                text: `🧭 StreamPlan #${plan.sequence} ${plan.agentId}/${plan.intent} score=${plan.score.toFixed(2)} policy=${plan.policyAccepted ? 'accept' : 'reject'} execute=${plan.executionAccepted ? 'accept' : 'reject'} (${plan.mode})`,
+                text: `🧭 StreamPlan #${plan.sequence} ${plan.agentId}/${plan.intent} score=${plan.score.toFixed(2)} policy=${plan.policyAccepted ? 'accept' : 'reject'} execute=${plan.executionAccepted ? 'accept' : 'reject'} (${plan.mode}) · ${plan.executionReason || plan.reason}`,
                 elapsedMs: tracker.elapsedMs(),
             });
 

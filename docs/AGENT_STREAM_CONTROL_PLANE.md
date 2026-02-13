@@ -59,6 +59,7 @@ Defaults are conservative and safe.
 - Admission now distinguishes:
   - `policyAccepted` (would pass policy)
   - `executionAccepted` (actually eligible to spawn in current mode)
+  - `executionReason` (deterministic explanation for admission/suppression)
 - SHADOW mode preserves policy observability while preventing execution.
 - Stream manager enforces max-concurrency guardrails and propagates standardized terminal reasons (`timeout`, `manual_cancel`, `engine_dispose`, `pressure_shed`).
 - Arbiter now applies deterministic conflict handling with intent priority and blocking-condition dominance.
@@ -66,6 +67,8 @@ Defaults are conservative and safe.
 - Added per-turn spawn budget control: `getAgentStreamMaxSpawnsPerTurn()`.
 - Added pressure-shedding switch: `isAgentStreamPressureSheddingEnabled()`.
 - Engine now sheds non-critical active streams under HIGH pressure before planning new spawns.
+- Scheduler now suppresses non-allowlisted intents under HIGH pressure and reports explicit suppression reasons.
+- Stream manager terminal-state cache is now bounded to avoid unbounded growth in long-running sessions.
 
 ## Engine integration (non-invasive)
 

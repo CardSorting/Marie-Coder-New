@@ -23,8 +23,23 @@ export interface AgentStreamTerminalState {
  * Current slice: lifecycle registry + timeout/cancel handling.
  */
 export class AgentStreamManager {
+    private static readonly MAX_TERMINAL_STATES = 256;
     private active = new Map<string, AgentStreamHandle>();
     private terminalStates = new Map<string, AgentStreamTerminalState>();
+
+    private recordTerminalState(streamId: string, state: AgentStreamTerminalState): void {
+        this.terminalStates.set(streamId, state);
+
+        if (this.terminalStates.size <= AgentStreamManager.MAX_TERMINAL_STATES) return;
+
+        const overflow = this.terminalStates.size - AgentStreamManager.MAX_TERMINAL_STATES;
+        const keys = this.terminalStates.keys();
+        for (let i = 0; i < overflow; i++) {
+            const key = keys.next().value;
+            if (!key) break;
+            this.terminalStates.delete(key);
+        }
+    }
 
     public spawn(plan: SpawnPlan): AgentStreamHandle | null {
         if (!plan.accepted) return null;
@@ -47,7 +62,7 @@ export class AgentStreamManager {
             const current = this.active.get(handle.streamId);
             if (!current || current.status !== 'running') return;
             current.status = 'timed_out';
-            this.terminalStates.set(handle.streamId, { status: 'timed_out', reason: 'timeout', endedAt: Date.now() });
+            this.recordTerminalState(handle.streamId, { status: 'timed_out', reason: 'timeout', endedAt: Date.now() });
             current.abortController.abort('timeout');
             this.active.delete(handle.streamId);
         }, handle.timeoutMs);
@@ -60,7 +75,7 @@ export class AgentStreamManager {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'completed';
-        this.terminalStates.set(streamId, { status: 'completed', endedAt: Date.now() });
+        this.recordTerminalState(streamId, { status: 'completed', endedAt: Date.now() });
         this.active.delete(streamId);
     }
 
@@ -68,7 +83,7 @@ export class AgentStreamManager {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'failed';
-        this.terminalStates.set(streamId, { status: 'failed', reason: 'unknown', endedAt: Date.now() });
+        this.recordTerminalState(streamId, { status: 'failed', reason: 'unknown', endedAt: Date.now() });
         this.active.delete(streamId);
     }
 
@@ -76,7 +91,7 @@ export class AgentStreamManager {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'cancelled';
-        this.terminalStates.set(streamId, { status: 'cancelled', reason, endedAt: Date.now() });
+        this.recordTerminalState(streamId, { status: 'cancelled', reason, endedAt: Date.now() });
         handle.abortController.abort(reason);
         this.active.delete(streamId);
     }

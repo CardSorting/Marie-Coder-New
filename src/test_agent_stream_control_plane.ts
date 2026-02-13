@@ -55,6 +55,7 @@ function testSchedulerDeterminismAndAcceptanceSemantics(): void {
     assert(shadowPlan.mode === 'SHADOW', 'Expected SHADOW mode when policy disabled');
     assert(shadowPlan.policyAccepted === true, 'Expected policyAccepted=true in shadow mode for accepted policy decision');
     assert(shadowPlan.executionAccepted === false, 'Expected executionAccepted=false in shadow mode');
+    assert((shadowPlan.executionReason || '').includes('SHADOW mode'), 'Expected explicit SHADOW suppression reason');
     assert(shadowPlan.accepted === false, 'Expected accepted alias to track execution acceptance');
     assert(shadowPlan.streamIdentity.streamId.endsWith('_1'), 'Expected deterministic sequence suffix _1');
 
@@ -66,6 +67,11 @@ function testSchedulerDeterminismAndAcceptanceSemantics(): void {
     assert(livePlan.policyAccepted === true, 'Expected policyAccepted=true in live mode');
     assert(livePlan.executionAccepted === true, 'Expected executionAccepted=true in live mode');
     assert(livePlan.accepted === true, 'Expected accepted alias=true in live mode');
+    assert(livePlan.executionReason === 'Execution admitted', 'Expected admitted execution reason in live mode');
+
+    const highPressurePlan = liveScheduler.plan({ ...context, pressure: 'HIGH' }, [{ ...createIntent('ISO9001'), intent: 'READINESS_GATE' }])[0];
+    assert(highPressurePlan.executionAccepted === false, 'Expected readiness intent execution suppression under HIGH pressure');
+    assert((highPressurePlan.executionReason || '').includes('HIGH pressure'), 'Expected HIGH pressure suppression reason');
 
     const equalScorePlans = liveScheduler.plan(context, [createIntent('QASRE'), createIntent('ISO9001')]);
     assert(equalScorePlans[0].sequence < equalScorePlans[1].sequence, 'Expected stable tie-break by sequence for equal scores');
@@ -116,6 +122,16 @@ function testManagerConcurrencyAndReasonPropagation(): void {
         assert(shed.includes('stream_readiness2'), 'Expected non-critical stream to be shed under pressure policy');
         const shedTerminal = manager.consumeTerminalState('stream_readiness2');
         assert(shedTerminal?.reason === 'pressure_shed', 'Expected shed stream to carry pressure_shed reason');
+
+        for (let i = 0; i < 270; i++) {
+            const id = `stream_gc_${i}`;
+            const stream = manager.spawn(mkPlan(id));
+            if (!stream) continue;
+            manager.complete(id);
+        }
+
+        const oldestTerminal = manager.consumeTerminalState('stream_gc_0');
+        assert(!oldestTerminal, 'Expected oldest terminal states to be evicted by bounded terminal-state cache');
     } finally {
         (ConfigService as any).getAgentStreamMaxConcurrent = originalMaxConcurrent;
     }

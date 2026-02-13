@@ -7,6 +7,7 @@ import { AgentStreamPolicyEngine } from "./AgentStreamPolicyEngine.js";
  */
 export class AgentIntentScheduler {
     private runSequence = new Map<string, number>();
+    private readonly highPressureExecutionAllowlist = new Set(['SAFETY_BLOCKER_CHECK', 'QUALITY_REGRESSION_SCAN']);
 
     constructor(private policy: AgentStreamPolicyEngine) { }
 
@@ -28,7 +29,18 @@ export class AgentIntentScheduler {
             const decision = this.policy.evaluateIntent(context, intent);
             const sequence = this.nextSequence(context.runId);
             const policyAccepted = decision.accepted;
-            const executionAccepted = policyAccepted && mode === 'LIVE';
+            const pressureSuppressed =
+                context.pressure === 'HIGH' &&
+                !this.highPressureExecutionAllowlist.has(intent.intent);
+
+            const executionAccepted = policyAccepted && mode === 'LIVE' && !pressureSuppressed;
+            const executionReason = !policyAccepted
+                ? decision.reason
+                : mode !== 'LIVE'
+                    ? 'Execution suppressed: SHADOW mode'
+                    : pressureSuppressed
+                        ? `Execution suppressed under HIGH pressure for intent ${intent.intent}`
+                        : 'Execution admitted';
 
             plans.push({
                 streamIdentity: {
@@ -44,6 +56,7 @@ export class AgentIntentScheduler {
                 score: decision.score,
                 policyAccepted,
                 executionAccepted,
+                executionReason,
                 accepted: executionAccepted,
                 reason: decision.reason,
                 tokenBudget: Math.max(300, Math.round(intent.tokenCostEstimate * 2.5)),
