@@ -1,4 +1,5 @@
-import { AgentEnvelope, SpawnPlan } from "./AgentStreamContracts.js";
+import { ConfigService } from "../../config/ConfigService.js";
+import { AgentEnvelope, AgentStreamCancelReason, SpawnPlan } from "./AgentStreamContracts.js";
 
 export interface AgentStreamHandle {
     streamId: string;
@@ -11,15 +12,23 @@ export interface AgentStreamHandle {
     abortController: AbortController;
 }
 
+export interface AgentStreamTerminalState {
+    status: AgentStreamHandle['status'];
+    reason?: AgentStreamCancelReason | string;
+    endedAt: number;
+}
+
 /**
  * Data-plane lifecycle manager for isolated agent streams.
  * Current slice: lifecycle registry + timeout/cancel handling.
  */
 export class AgentStreamManager {
     private active = new Map<string, AgentStreamHandle>();
+    private terminalStates = new Map<string, AgentStreamTerminalState>();
 
     public spawn(plan: SpawnPlan): AgentStreamHandle | null {
         if (!plan.accepted) return null;
+        if (this.active.size >= ConfigService.getAgentStreamMaxConcurrent()) return null;
 
         const handle: AgentStreamHandle = {
             streamId: plan.streamIdentity.streamId,
@@ -38,7 +47,8 @@ export class AgentStreamManager {
             const current = this.active.get(handle.streamId);
             if (!current || current.status !== 'running') return;
             current.status = 'timed_out';
-            current.abortController.abort();
+            this.terminalStates.set(handle.streamId, { status: 'timed_out', reason: 'timeout', endedAt: Date.now() });
+            current.abortController.abort('timeout');
             this.active.delete(handle.streamId);
         }, handle.timeoutMs);
 
@@ -50,6 +60,7 @@ export class AgentStreamManager {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'completed';
+        this.terminalStates.set(streamId, { status: 'completed', endedAt: Date.now() });
         this.active.delete(streamId);
     }
 
@@ -57,21 +68,29 @@ export class AgentStreamManager {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'failed';
+        this.terminalStates.set(streamId, { status: 'failed', reason: 'unknown', endedAt: Date.now() });
         this.active.delete(streamId);
     }
 
-    public cancel(streamId: string, reason?: string): void {
+    public cancel(streamId: string, reason: AgentStreamCancelReason = 'manual_cancel'): void {
         const handle = this.active.get(streamId);
         if (!handle) return;
         handle.status = 'cancelled';
+        this.terminalStates.set(streamId, { status: 'cancelled', reason, endedAt: Date.now() });
         handle.abortController.abort(reason);
         this.active.delete(streamId);
     }
 
-    public cancelAll(reason?: string): void {
+    public cancelAll(reason: AgentStreamCancelReason = 'manual_cancel'): void {
         for (const streamId of this.active.keys()) {
             this.cancel(streamId, reason);
         }
+    }
+
+    public consumeTerminalState(streamId: string): AgentStreamTerminalState | undefined {
+        const state = this.terminalStates.get(streamId);
+        if (state) this.terminalStates.delete(streamId);
+        return state;
     }
 
     public activeCount(): number {

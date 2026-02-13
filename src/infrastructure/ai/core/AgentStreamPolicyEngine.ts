@@ -12,6 +12,14 @@ export interface PolicyDecision {
  * Safe default: conservative admission that can run in shadow mode.
  */
 export class AgentStreamPolicyEngine {
+    private readonly intentPriors: Record<AgentIntentRequest['intent'], number> = {
+        SAFETY_BLOCKER_CHECK: 2.2,
+        QUALITY_REGRESSION_SCAN: 1.8,
+        READINESS_GATE: 1.2,
+        TRAJECTORY_OPTIMIZATION: 1.0,
+        SPECULATIVE_DISCOVERY: 0.7,
+    };
+
     public isEnabled(): boolean {
         return ConfigService.isAgentStreamsEnabled();
     }
@@ -29,11 +37,17 @@ export class AgentStreamPolicyEngine {
     }
 
     public evaluateIntent(context: AgentTurnContext, intent: AgentIntentRequest): PolicyDecision {
-        const contention = Math.max(0.25, intent.contentionFactor);
-        const tokenCost = Math.max(1, intent.tokenCostEstimate);
+        const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+        const urgency = clamp(intent.urgency, 0.1, 3);
+        const risk = clamp(intent.risk, 0.1, 3);
+        const expectedValue = clamp(intent.expectedValue, 0.1, 3);
+        const contention = clamp(intent.contentionFactor, 0.25, 4);
+        const tokenCostUnits = Math.max(0.5, intent.tokenCostEstimate / 250);
         const pressureMultiplier = context.pressure === 'HIGH' ? 1.4 : context.pressure === 'MEDIUM' ? 1.1 : 1.0;
+        const intentPrior = this.intentPriors[intent.intent] ?? 1.0;
 
-        const rawScore = (intent.urgency * intent.risk * intent.expectedValue) / (tokenCost * contention * pressureMultiplier);
+        const weightedSignal = ((urgency * 0.45) + (risk * 0.55)) * expectedValue * intentPrior;
+        const rawScore = weightedSignal / (tokenCostUnits * contention * pressureMultiplier);
         const score = Number.isFinite(rawScore) ? rawScore : 0;
         const threshold = this.getSpawnThreshold();
 

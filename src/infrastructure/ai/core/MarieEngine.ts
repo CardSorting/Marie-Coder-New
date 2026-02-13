@@ -1,4 +1,4 @@
-import { AIProvider } from "../providers/AIProvider.js";
+import { AIProvider, AIStreamEvent } from "../providers/AIProvider.js";
 import { ToolRegistry } from "../../tools/ToolRegistry.js";
 import { MarieProgressTracker } from "./MarieProgressTracker.js";
 import { MarieSession } from "./MarieSession.js";
@@ -22,7 +22,8 @@ import { AgentIntentScheduler } from "./AgentIntentScheduler.js";
 import { AgentStreamPolicyEngine } from "./AgentStreamPolicyEngine.js";
 import { AgentStreamManager } from "./AgentStreamManager.js";
 import { AgentMergeArbiter } from "./AgentMergeArbiter.js";
-import { AgentIntentRequest, AgentTurnContext } from "./AgentStreamContracts.js";
+import { AgentEnvelope, AgentIntentRequest, AgentTurnContext } from "./AgentStreamContracts.js";
+import { ConfigService } from "../../config/ConfigService.js";
 
 /**
  * Entry point for the AI Engine. Thin orchestrator of modular units.
@@ -48,6 +49,7 @@ export class MarieEngine {
     private agentIntentScheduler: AgentIntentScheduler;
     private agentStreamManager: AgentStreamManager;
     private agentMergeArbiter: AgentMergeArbiter;
+    private qasreAgent: MarieQASRE;
 
     constructor(
         private provider: AIProvider,
@@ -64,6 +66,7 @@ export class MarieEngine {
         const iso9001 = new MarieISO9001(this.provider);
         const yolo = new MarieYOLO(this.provider);
         const qasre = new MarieQASRE(this.provider, this.council);
+        this.qasreAgent = qasre;
         const auditor = new MarieAuditor(this.provider, this.toolRegistry, this.approvalRequester, this.council);
 
         this.swarm = new MarieAgentSwarm(
@@ -159,7 +162,7 @@ export class MarieEngine {
         this.council.clearTurnState();
 
         const snapshot = this.council.getSnapshot();
-        this.previewAgentControlPlane(tracker, snapshot);
+        await this.previewAgentControlPlane(tracker, snapshot, messages);
         const directive = this.directiveService.buildCouncilDirective(snapshot);
         if (directive) {
             messages.push({ role: "user", content: directive });
@@ -662,15 +665,16 @@ export class MarieEngine {
      * Non-invasive control-plane preview for future isolated agent streams.
      * This does not spawn streams yet; it only validates planning + arbitration wiring.
      */
-    private previewAgentControlPlane(tracker: MarieProgressTracker, snapshot: any): void {
+    private async previewAgentControlPlane(tracker: MarieProgressTracker, snapshot: any, messages: any[]): Promise<void> {
         const hotspotCount = Object.values(snapshot.errorHotspots || {}).filter((c: any) => (c as number) > 0).length;
+        const pilotAgents = new Set(ConfigService.getAgentStreamPilotAgents().map(a => a.toUpperCase()));
         const context: AgentTurnContext = {
             runId: tracker.getRun().runId,
             flowState: snapshot.flowState || 0,
             errorCount: this.council.getErrorCount(),
             hotspotCount,
             objectiveCount: tracker.getPendingObjectives().length,
-            pressure: MarieStabilityMonitor.isHighPressure() ? 'HIGH' : 'LOW',
+            pressure: MarieStabilityMonitor.isHighPressure() ? 'HIGH' : 'MEDIUM',
         };
 
         const intents: AgentIntentRequest[] = [
@@ -697,27 +701,200 @@ export class MarieEngine {
         const plans = this.agentIntentScheduler.plan(context, intents);
         this.agentMergeArbiter.clear();
 
+        let policyAcceptedCount = 0;
+        let executionAcceptedCount = 0;
+        for (const plan of plans) {
+            if (plan.policyAccepted) policyAcceptedCount++;
+            if (plan.executionAccepted) executionAcceptedCount++;
+        }
+
         for (const plan of plans.slice(0, this.agentStreamPolicy.getMaxConcurrentStreams())) {
-            if (!plan.accepted) continue;
+            tracker.emitEvent({
+                type: 'reasoning',
+                runId: tracker.getRun().runId,
+                text: `🧭 StreamPlan #${plan.sequence} ${plan.agentId}/${plan.intent} score=${plan.score.toFixed(2)} policy=${plan.policyAccepted ? 'accept' : 'reject'} execute=${plan.executionAccepted ? 'accept' : 'reject'} (${plan.mode})`,
+                elapsedMs: tracker.elapsedMs(),
+            });
+
+            if (!plan.executionAccepted) continue;
 
             const handle = this.agentStreamManager.spawn(plan);
             if (!handle) continue;
 
-            this.agentMergeArbiter.stage(this.agentStreamManager.toEnvelope(handle, {
-                decision: 'PREVIEW_ONLY',
-                confidence: 0.5,
-                summary: `Planned ${plan.agentId} for ${plan.intent}`,
-            }));
+            const isPilotAgent = pilotAgents.has(String(plan.agentId).toUpperCase());
 
-            this.agentStreamManager.complete(handle.streamId);
+            tracker.emitEvent({
+                type: 'agent_stream_lifecycle',
+                runId: tracker.getRun().runId,
+                streamIdentity: plan.streamIdentity,
+                status: 'spawned',
+                reason: plan.reason,
+                elapsedMs: tracker.elapsedMs(),
+            });
+
+            tracker.emitEvent({
+                type: 'agent_stream_lifecycle',
+                runId: tracker.getRun().runId,
+                streamIdentity: plan.streamIdentity,
+                status: 'running',
+                elapsedMs: tracker.elapsedMs(),
+            });
+
+            try {
+                if (isPilotAgent && plan.agentId === 'QASRE') {
+                    const qasreContext = this.council.getRecentChangesSummary();
+                    const resultText = await this.qasreAgent.evaluateIsolatedStream(
+                        messages,
+                        qasreContext,
+                        handle.abortController.signal,
+                        (event) => this.emitAgentStreamUpdate(tracker, handle.streamId, plan.agentId, event)
+                    );
+
+                    const envelope = this.buildQasreEnvelope(handle, plan.intent, resultText);
+                    this.agentMergeArbiter.stage(envelope);
+                    this.agentStreamManager.complete(handle.streamId);
+
+                    const terminal = this.agentStreamManager.consumeTerminalState(handle.streamId);
+
+                    tracker.emitEvent({
+                        type: 'agent_stream_lifecycle',
+                        runId: tracker.getRun().runId,
+                        streamIdentity: envelope.streamIdentity,
+                        status: 'completed',
+                        reason: terminal?.reason,
+                        elapsedMs: tracker.elapsedMs(),
+                    });
+                } else {
+                    this.agentMergeArbiter.stage(this.agentStreamManager.toEnvelope(handle, {
+                        decision: 'PREVIEW_ONLY',
+                        confidence: 0.5,
+                        summary: isPilotAgent
+                            ? `Pilot requested for ${plan.agentId}, but isolated execution path is not implemented yet`
+                            : `Planned ${plan.agentId} for ${plan.intent}`,
+                    }));
+                    this.agentStreamManager.complete(handle.streamId);
+                    this.agentStreamManager.consumeTerminalState(handle.streamId);
+                }
+            } catch (error: any) {
+                const terminal = this.agentStreamManager.consumeTerminalState(handle.streamId);
+                if (!terminal) {
+                    this.agentStreamManager.fail(handle.streamId);
+                }
+
+                const terminalAfterFail = terminal || this.agentStreamManager.consumeTerminalState(handle.streamId);
+                tracker.emitEvent({
+                    type: 'agent_stream_lifecycle',
+                    runId: tracker.getRun().runId,
+                    streamIdentity: plan.streamIdentity,
+                    status: terminalAfterFail?.status || (error?.name === 'AbortError' ? 'timed_out' : 'failed'),
+                    reason: terminalAfterFail?.reason || error?.message || 'agent stream execution failed',
+                    elapsedMs: tracker.elapsedMs(),
+                });
+            }
         }
 
         const decision = this.agentMergeArbiter.evaluate();
+        for (const envelope of decision.accepted) {
+            tracker.emitEvent({
+                type: 'agent_envelope',
+                runId: tracker.getRun().runId,
+                streamIdentity: envelope.streamIdentity,
+                envelope: {
+                    decision: envelope.decision,
+                    confidence: envelope.confidence,
+                    evidenceRefs: envelope.evidenceRefs,
+                    recommendedActions: envelope.recommendedActions,
+                    blockingConditions: envelope.blockingConditions,
+                    summary: envelope.summary,
+                },
+                elapsedMs: tracker.elapsedMs(),
+            });
+
+            if (envelope.streamIdentity.agentId === 'QASRE') {
+                this.council.blackboard.write('agent:qasre:lastEnvelope', {
+                    decision: envelope.decision,
+                    confidence: envelope.confidence,
+                    summary: envelope.summary,
+                    timestamp: envelope.createdAt,
+                    streamId: envelope.streamIdentity.streamId,
+                });
+
+                if ((envelope.decision === 'QASRE_DEBUG' || envelope.decision === 'QASRE_CRITICAL') && envelope.confidence >= 1.2) {
+                    this.council.registerVote('QASRE', 'DEBUG', `Agent stream finding: ${envelope.summary || 'risk detected'}`, Math.min(2.2, Math.max(1.0, envelope.confidence)));
+                }
+            }
+        }
+
         if (plans.length > 0) {
             tracker.emitEvent({
                 type: 'reasoning',
                 runId: tracker.getRun().runId,
-                text: `🛰️ Agent Stream Control Plane (${plans[0].mode}): ${decision.accepted.length} accepted, ${decision.rejected.length} rejected proposals.`,
+                text: `🛰️ Agent Stream Control Plane (${plans[0].mode}): policy ${policyAcceptedCount}/${plans.length}, execution ${executionAcceptedCount}/${plans.length}, merged ${decision.accepted.length} accepted / ${decision.rejected.length} rejected.`,
+                elapsedMs: tracker.elapsedMs(),
+            });
+        }
+    }
+
+    private buildQasreEnvelope(handle: { streamId: string; agentId: string; }, intent: AgentIntentRequest['intent'], resultText: string): AgentEnvelope {
+        const text = (resultText || '').trim();
+        const normalized = text.toUpperCase();
+        const critical = normalized.includes('CRITICAL') || normalized.includes('DATA LOSS') || normalized.includes('SECURITY');
+        const risky = normalized.includes('RISK: HIGH') || normalized.includes('RISK') || normalized.includes('FAILED') || normalized.includes('ERROR');
+
+        let decision: AgentEnvelope['decision'] = 'QASRE_NO_ACTION';
+        let confidence = 0.8;
+        if (critical) {
+            decision = 'QASRE_CRITICAL';
+            confidence = 2.1;
+        } else if (risky) {
+            decision = 'QASRE_DEBUG';
+            confidence = 1.6;
+        }
+
+        return {
+            streamIdentity: {
+                streamId: handle.streamId,
+                origin: 'agent',
+                agentId: handle.agentId,
+            },
+            intent,
+            decision,
+            confidence,
+            evidenceRefs: [`stream:${handle.streamId}`],
+            recommendedActions: [],
+            blockingConditions: critical ? ['critical_quality_risk'] : [],
+            summary: text.slice(0, 240) || 'No QASRE summary produced',
+            createdAt: Date.now(),
+        };
+    }
+
+    private emitAgentStreamUpdate(tracker: MarieProgressTracker, streamId: string, agentId: string, event: AIStreamEvent): void {
+        if (event.type === 'stage_change') {
+            tracker.emitEvent({
+                type: 'reasoning',
+                runId: tracker.getRun().runId,
+                text: `🧵 ${agentId} stream ${streamId} stage=${event.stage}${event.label ? ` (${event.label})` : ''}`,
+                elapsedMs: tracker.elapsedMs(),
+            });
+            return;
+        }
+
+        if (event.type === 'usage') {
+            const usage = event.usage?.totalTokens ?? event.usage?.outputTokens ?? 0;
+            tracker.emitEvent({
+                type: 'reasoning',
+                runId: tracker.getRun().runId,
+                text: `🧵 ${agentId} stream ${streamId} usage=${usage} tokens`,
+                elapsedMs: tracker.elapsedMs(),
+            });
+            return;
+        }
+
+        if (event.type === 'content_delta' && event.text.trim().length > 0) {
+            tracker.emitEvent({
+                type: 'reasoning',
+                runId: tracker.getRun().runId,
+                text: `🧵 ${agentId} Δ ${event.text.trim().slice(0, 120)}`,
                 elapsedMs: tracker.elapsedMs(),
             });
         }
@@ -725,7 +902,7 @@ export class MarieEngine {
 
     public dispose(): void {
         this.disposed = true;
-        this.agentStreamManager.cancelAll('engine_disposed');
+        this.agentStreamManager.cancelAll('engine_dispose');
         this.pulseService?.cleanup();
         this.pulseService = undefined;
         this.contentBuffer = "";

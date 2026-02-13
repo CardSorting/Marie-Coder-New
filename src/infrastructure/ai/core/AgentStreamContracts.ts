@@ -24,13 +24,18 @@ export interface SpawnPlan {
     streamIdentity: StreamIdentity;
     intent: AgentIntentClass;
     agentId: AgentId;
+    sequence: number;
     score: number;
+    policyAccepted: boolean;
+    executionAccepted: boolean;
     accepted: boolean;
     reason: string;
     tokenBudget: number;
     timeoutMs: number;
     mode: 'SHADOW' | 'LIVE';
 }
+
+export type AgentStreamCancelReason = 'timeout' | 'manual_cancel' | 'engine_dispose' | 'pressure_shed' | 'unknown';
 
 export interface AgentEnvelope {
     streamIdentity: StreamIdentity;

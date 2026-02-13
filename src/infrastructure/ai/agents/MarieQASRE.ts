@@ -3,6 +3,7 @@ import { MARIE_QA_SRE_SYSTEM_PROMPT } from "../../../prompts.js";
 import { ConfigService } from "../../config/ConfigService.js";
 import { MarieResponse } from "../core/MarieResponse.js";
 import { MarieCouncil } from "../council/MarieCouncil.js";
+import { AIStreamEvent } from "../providers/AIProvider.js";
 
 export class MarieQASRE {
     constructor(
@@ -37,6 +38,40 @@ export class MarieQASRE {
         } catch (error) {
             console.error("MarieQASRE evaluation error", error);
             return "Error during QA evaluation. Proceed with caution.";
+        }
+    }
+
+    /**
+     * Pilot path for isolated token-stream execution.
+     * Uses the provider's streaming API with an independent abort signal and event hook.
+     */
+    public async evaluateIsolatedStream(
+        messages: any[],
+        councilContext: string,
+        signal?: AbortSignal,
+        onUpdate?: (event: AIStreamEvent) => void
+    ): Promise<string> {
+        try {
+            const contextPrompt = `\n\n[STRICT PROTOCOL: QASRE]\nCONTEXT FROM COUNCIL:\n${councilContext}\n\nAnalyze the recent changes. YOU MUST:\n1. Identify CONCRETE RISKS only.\n2. Suggest AT MOST 2 low-risk fixes.\n3. Be extremely concise. TERMINATE immediately after the suggestions.`;
+
+            const providerResponse = await this.provider.createMessageStream({
+                model: ConfigService.getModel(),
+                system: MARIE_QA_SRE_SYSTEM_PROMPT,
+                messages: [
+                    ...messages.map(m => ({ role: m.role, content: m.content })),
+                    { role: 'user', content: contextPrompt }
+                ],
+                max_tokens: 1024,
+            }, (event) => {
+                onUpdate?.(event);
+            }, signal);
+
+            const text = MarieResponse.wrap(providerResponse.content).getText();
+            this.extractFixesToBlackboard(text);
+            return text.substring(0, 800);
+        } catch (error) {
+            console.error("MarieQASRE isolated stream evaluation error", error);
+            return "Error during isolated QA stream evaluation. Proceed with caution.";
         }
     }
 

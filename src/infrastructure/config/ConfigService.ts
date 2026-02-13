@@ -259,4 +259,39 @@ export class ConfigService {
 
         return Math.max(3000, Math.min(120000, value));
     }
+
+    static getAgentStreamPilotAgents(): string[] {
+        const normalize = (value: unknown): string[] => {
+            if (Array.isArray(value)) {
+                return value
+                    .filter((v): v is string => typeof v === 'string')
+                    .map(v => v.trim())
+                    .filter(Boolean);
+            }
+
+            if (typeof value === 'string') {
+                return value
+                    .split(',')
+                    .map(v => v.trim())
+                    .filter(Boolean);
+            }
+
+            return [];
+        };
+
+        const vscode = getVscode();
+        if (vscode) {
+            const configured = vscode.workspace.getConfiguration("marie").get<string[] | string>("agentStreamPilotAgents", ['QASRE']);
+            return normalize(configured).length > 0 ? normalize(configured) : ['QASRE'];
+        }
+
+        const config = getCliConfig();
+        const fromConfig = normalize(config.agentStreamPilotAgents);
+        if (fromConfig.length > 0) return fromConfig;
+
+        const fromEnv = normalize(process.env.MARIE_AGENT_STREAM_PILOT_AGENTS);
+        if (fromEnv.length > 0) return fromEnv;
+
+        return ['QASRE'];
+    }
 }

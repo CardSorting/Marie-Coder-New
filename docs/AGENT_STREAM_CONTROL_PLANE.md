@@ -49,8 +49,20 @@ In `ConfigService`:
 - `getAgentStreamMaxConcurrent()`
 - `getAgentStreamSpawnThreshold()`
 - `getAgentStreamTimeoutMs()`
+- `getAgentStreamPilotAgents()`
 
 Defaults are conservative and safe.
+
+## Recent hardening upgrades
+
+- Deterministic scheduler sequencing now uses run-scoped sequence IDs (`agent_<runId>_<agent>_<sequence>`).
+- Admission now distinguishes:
+  - `policyAccepted` (would pass policy)
+  - `executionAccepted` (actually eligible to spawn in current mode)
+- SHADOW mode preserves policy observability while preventing execution.
+- Stream manager enforces max-concurrency guardrails and propagates standardized terminal reasons (`timeout`, `manual_cancel`, `engine_dispose`, `pressure_shed`).
+- Arbiter now applies deterministic conflict handling with intent priority and blocking-condition dominance.
+- QASRE pilot path emits incremental stream telemetry and records stream provenance (`streamId`) into blackboard envelope memory.
 
 ## Engine integration (non-invasive)
 
@@ -66,6 +78,6 @@ Important: this integration does **not** alter existing swarm behavior or tool e
 
 1. Keep `agentStreamsEnabled=false` (shadow mode behavior).
 2. Validate telemetry quality and policy scores.
-3. Replace preview envelope generation with real per-agent stream execution for one pilot agent.
+3. Enable `agentStreamPilotAgents` for one pilot (e.g. `QASRE`) and validate isolated streaming telemetry.
 4. Gate merges via arbiter commit policy.
 5. Expand to additional agents gradually.
