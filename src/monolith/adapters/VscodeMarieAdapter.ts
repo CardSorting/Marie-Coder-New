@@ -1,7 +1,4 @@
 import * as vscode from "vscode";
-import { AnthropicProvider } from "../infrastructure/ai/providers/AnthropicProvider.js";
-import { OpenRouterProvider } from "../infrastructure/ai/providers/OpenRouterProvider.js";
-import { CerebrasProvider } from "../infrastructure/ai/providers/CerebrasProvider.js";
 import { MarieCallbacks, RunTelemetry } from "../domain/marie/MarieTypes.js";
 import { registerMarieTools } from "../infrastructure/tools/MarieToolDefinitions.js";
 import { JoyAutomationService } from "../services/JoyAutomationService.js";
@@ -9,6 +6,8 @@ import { JoyService } from "../services/JoyService.js";
 import { ConfigService } from "../infrastructure/config/ConfigService.js";
 import { MarieRuntime } from "../runtime/MarieRuntime.js";
 import { MarieProviderType, RuntimeConfigPort, RuntimeSessionStorePort, SessionMetadata } from "../runtime/types.js";
+import { createDefaultProvider } from "../runtime/providerFactory.js";
+import { RuntimeAdapterBase } from "../runtime/RuntimeAdapterBase.js";
 
 class VscodeConfigPort implements RuntimeConfigPort {
     getAiProvider(): MarieProviderType {
@@ -58,39 +57,20 @@ class VscodeSessionStorePort implements RuntimeSessionStorePort {
     }
 }
 
-export class Marie implements vscode.Disposable {
-    private readonly runtime: MarieRuntime<JoyAutomationService>;
+export class Marie extends RuntimeAdapterBase<JoyAutomationService> implements vscode.Disposable {
 
     constructor(private context: vscode.ExtensionContext, public readonly joyService: JoyService) {
         const automationService = new JoyAutomationService(context, joyService);
-        this.runtime = new MarieRuntime<JoyAutomationService>({
+        const runtime = new MarieRuntime<JoyAutomationService>({
             config: new VscodeConfigPort(),
             sessionStore: new VscodeSessionStorePort(context),
             toolRegistrar: registerMarieTools,
-            providerFactory: (providerType, apiKey) => {
-                if (providerType === 'openrouter') return new OpenRouterProvider(apiKey);
-                if (providerType === 'cerebras') return new CerebrasProvider(apiKey);
-                return new AnthropicProvider(apiKey);
-            },
+            providerFactory: createDefaultProvider,
             automationService,
             onProgressEvent: (event) => this.joyService.onRunProgress(event as any)
         });
-    }
 
-    public async createSession() { return this.runtime.createSession(); }
-    public async listSessions() { return this.runtime.listSessions(); }
-    public async loadSession(id: string): Promise<string> { return this.runtime.loadSession(id); }
-    public async deleteSession(id: string) { await this.runtime.deleteSession(id); }
-    public async renameSession(id: string, newTitle: string) { await this.runtime.renameSession(id, newTitle); }
-    public async togglePinSession(id: string) { await this.runtime.togglePinSession(id); }
-    public async handleMessage(text: string, callbacks?: MarieCallbacks): Promise<string> { return this.runtime.handleMessage(text, callbacks); }
-    public handleToolApproval(requestId: string, approved: boolean) { this.runtime.handleToolApproval(requestId, approved); }
-    public async clearCurrentSession() { await this.runtime.clearCurrentSession(); }
-    public stopGeneration() { this.runtime.stopGeneration(); }
-    public updateSettings() { this.runtime.updateSettings(); }
-    public async getModels() { return this.runtime.getModels(); }
-    public getMessages() { return this.runtime.getMessages(); }
-    public getCurrentSessionId(): string { return this.runtime.getCurrentSessionId(); }
-    public getCurrentRun(): RunTelemetry | undefined { return this.runtime.getCurrentRun(); }
-    public dispose() { this.runtime.dispose(); }
+        super(runtime);
+    }
+    public dispose() { super.dispose(); }
 }

@@ -5,6 +5,7 @@ import { getStringArg } from "../infrastructure/tools/ToolUtils.js";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { RuntimeAutomationPort } from "../runtime/types.js";
+import { registerSharedToolDefinitions } from "../infrastructure/tools/SharedToolDefinitions.js";
 
 const execAsync = promisify(exec);
 
@@ -114,83 +115,32 @@ async function getFolderTree(dirPath: string, maxDepth: number = 3): Promise<str
 }
 
 export function registerMarieToolsCLI(registry: ToolRegistry, _automationService: RuntimeAutomationPort, workingDir: string) {
-    registry.register({
-        name: "write_file",
-        description: "Write content to a file. Creates directories if needed.",
-        isDestructive: true,
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The absolute or relative path to the file" },
-                content: { type: "string", description: "The content to write" },
-            },
-            required: ["path", "content"],
+    registerSharedToolDefinitions(registry, {
+        resolvePath: (p: string) => path.isAbsolute(p) ? p : path.join(workingDir, p),
+        writeFile: async (p, content) => await writeFile(p, content),
+        readFile: async (p, start, end) => await readFile(p, start, end),
+        listDir: async (p) => await listFiles(p),
+        grepSearch: async (q, p) => await searchFiles(q, p),
+        getGitContext: async () => {
+            const [status, staged, unstaged] = await Promise.all([
+                getGitStatus(workingDir),
+                getGitDiff(workingDir, true),
+                getGitDiff(workingDir, false)
+            ]);
+            return `# Git Context\n\n## Status\n\`\`\`\n${status}\n\`\`\`\n\n## Staged Changes\n\`\`\`\n${staged}\n\`\`\`\n\n## Unstaged Changes\n\`\`\`\n${unstaged}\n\`\`\``;
         },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const c = getStringArg(args, 'content');
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-            await writeFile(fullPath, c);
-            return `File written to ${fullPath}`;
+        runCommand: async (cmd) => await runCommand(cmd, workingDir),
+        getFolderStructure: async (p, depth) => await getFolderTree(p, depth),
+        replaceInFile: async (p, s, r) => {
+            const content = await fs.readFile(p, 'utf-8');
+            if (!content.includes(s)) {
+                return `Error: Search text not found in file`;
+            }
+            const newContent = content.split(s).join(r);
+            await fs.writeFile(p, newContent, 'utf-8');
+            return `Replaced ${content.split(s).length - 1} occurrence(s) in ${p}`;
         }
-    });
-
-    registry.register({
-        name: "read_file",
-        description: "Read the content of a file. Supports line range selection.",
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The path to the file" },
-                startLine: { type: "number", description: "First line to read (1-indexed)" },
-                endLine: { type: "number", description: "Last line to read (1-indexed)" },
-            },
-            required: ["path"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-            const start = args.startLine as number | undefined;
-            const end = args.endLine as number | undefined;
-            return await readFile(fullPath, start, end);
-        }
-    });
-
-    registry.register({
-        name: "list_dir",
-        description: "List files and directories with icons.",
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The directory path" },
-            },
-            required: ["path"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-            return await listFiles(fullPath);
-        }
-    });
-
-    registry.register({
-        name: "grep_search",
-        description: "Search for text patterns in files using grep.",
-        input_schema: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "The search pattern" },
-                path: { type: "string", description: "Directory to search (defaults to working directory)" },
-            },
-            required: ["query"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const q = getStringArg(args, 'query');
-            const p = getStringArg(args, 'path') || workingDir;
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-            return await searchFiles(q, fullPath);
-        }
-    });
+    }, { includeExtended: true });
 
     registry.register({
         name: "delete_file",
@@ -203,91 +153,11 @@ export function registerMarieToolsCLI(registry: ToolRegistry, _automationService
             },
             required: ["path"],
         },
-        execute: async (args, onProgress, signal) => {
+        execute: async (args) => {
             const p = getStringArg(args, 'path');
             const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
             await deleteFile(fullPath);
             return `Deleted ${fullPath}`;
-        }
-    });
-
-    registry.register({
-        name: "get_git_context",
-        description: "Get git status and diffs.",
-        input_schema: { type: "object", properties: {} },
-        execute: async () => {
-            const [status, staged, unstaged] = await Promise.all([
-                getGitStatus(workingDir),
-                getGitDiff(workingDir, true),
-                getGitDiff(workingDir, false)
-            ]);
-
-            return `# Git Context\n\n## Status\n\`\`\`\n${status}\n\`\`\`\n\n## Staged Changes\n\`\`\`\n${staged}\n\`\`\`\n\n## Unstaged Changes\n\`\`\`\n${unstaged}\n\`\`\``;
-        }
-    });
-
-    registry.register({
-        name: "run_command",
-        description: "Execute a shell command. Requires user approval for destructive commands.",
-        isDestructive: true,
-        input_schema: {
-            type: "object",
-            properties: {
-                command: { type: "string", description: "The shell command to execute" },
-            },
-            required: ["command"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const cmd = getStringArg(args, 'command');
-            return await runCommand(cmd, workingDir);
-        }
-    });
-
-    registry.register({
-        name: "get_folder_structure",
-        description: "Get a tree view of a directory structure.",
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The directory path" },
-                depth: { type: "number", description: "Maximum depth (default: 3)" }
-            },
-            required: ["path"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const depth = args.depth as number | undefined;
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-            return await getFolderTree(fullPath, depth);
-        }
-    });
-
-    registry.register({
-        name: "replace_in_file",
-        description: "Replace a string with another in a file.",
-        isDestructive: true,
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "File path" },
-                search: { type: "string", description: "Text to find" },
-                replace: { type: "string", description: "Replacement text" }
-            },
-            required: ["path", "search", "replace"]
-        },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const s = getStringArg(args, 'search');
-            const r = getStringArg(args, 'replace');
-            const fullPath = path.isAbsolute(p) ? p : path.join(workingDir, p);
-
-            const content = await fs.readFile(fullPath, 'utf-8');
-            if (!content.includes(s)) {
-                return `Error: Search text not found in file`;
-            }
-            const newContent = content.split(s).join(r);
-            await fs.writeFile(fullPath, newContent, 'utf-8');
-            return `Replaced ${s.split(s).length - 1} occurrence(s) in ${fullPath}`;
         }
     });
 }

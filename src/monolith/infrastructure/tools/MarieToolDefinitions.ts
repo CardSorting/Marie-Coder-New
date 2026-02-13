@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { ToolRegistry } from "./ToolRegistry.js";
 import { getStringArg, getArrayArg } from "./ToolUtils.js";
+import { registerSharedToolDefinitions } from "./SharedToolDefinitions.js";
 import { withTimeout } from "../../plumbing/utils/TimeoutUtils.js";
 import { writeFile, deleteFile } from "../../plumbing/filesystem/FileService.js";
 import { logGratitude, generateTidyChecklist, foldCode, cherishFile, generateJoyDashboard } from "../../domain/joy/JoyTools.js";
@@ -21,83 +22,30 @@ import { RitualService, JoyZone } from "../../domain/joy/RitualService.js";
 import { ContextArchiveService } from "../ai/context/ContextArchiveService.js";
 
 export function registerMarieTools(registry: ToolRegistry, automationService: JoyAutomationService) {
-    registry.register({
-        name: "write_file",
-        description: "Write content to a file. Always use absolute paths.",
-        isDestructive: true,
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The absolute path to the file" },
-                content: { type: "string", description: "The content to write" },
-            },
-            required: ["path", "content"],
+    registerSharedToolDefinitions(registry, {
+        resolvePath: (p: string) => p,
+        writeFile: async (p, content, signal) => await writeFile(p, content, signal),
+        readFile: async (p, start, end, signal) => {
+            const mod = await import("../../plumbing/filesystem/FileService.js");
+            return await mod.readFile(p, start, end, signal);
         },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const c = getStringArg(args, 'content');
-            await writeFile(p, c, signal);
-            return `File written to ${p}`;
-        }
-    });
-
-    registry.register({
-        name: "read_file",
-        description: "Read the content of a file. Supports surgical focus via startLine and endLine. Always use absolute paths.",
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The absolute path to the file" },
-                startLine: { type: "number", description: "The first line to read (1-indexed)" },
-                endLine: { type: "number", description: "The last line to read (1-indexed)" },
-            },
-            required: ["path"],
+        listDir: async (p, signal) => {
+            const mod = await import("../../plumbing/filesystem/FileService.js");
+            return await mod.listFiles(p, signal);
         },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const start = args.startLine as number | undefined;
-            const end = args.endLine as number | undefined;
-            const { readFile } = await import("../../plumbing/filesystem/FileService.js");
-            return await readFile(p, start, end, signal);
-        }
-    });
-
-    registry.register({
-        name: "list_dir",
-        description: "List the files and directories in a given path with metadata (size, type).",
-        input_schema: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "The absolute path to the directory" },
-            },
-            required: ["path"],
+        grepSearch: async (q, p, signal) => {
+            const mod = await import("../../plumbing/filesystem/FileService.js");
+            return await mod.searchFiles(q, p || (vscode.workspace.workspaceFolders?.[0].uri.fsPath || ""), signal);
         },
-        execute: async (args, onProgress, signal) => {
-            const p = getStringArg(args, 'path');
-            const { listFiles } = await import("../../plumbing/filesystem/FileService.js");
-            return await listFiles(p, signal);
-        }
-    });
-
-    registry.register({
-        name: "grep_search",
-        description: "Search for a text pattern within files. Returns line numbers and snippets for context.",
-        input_schema: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "The text pattern to search for" },
-                path: { type: "string", description: "The absolute path to search within (defaults to workspace root if not provided)" },
-            },
-            required: ["query"],
-        },
-        execute: async (args, onProgress, signal) => {
-            const q = getStringArg(args, 'query');
-            let p = getStringArg(args, 'path');
-            if (!p) {
-                p = vscode.workspace.workspaceFolders?.[0].uri.fsPath || "";
-            }
-            const { searchFiles } = await import("../../plumbing/filesystem/FileService.js");
-            return await searchFiles(q, p, signal);
+        getGitContext: async () => {
+            const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+            if (!root) return "No workspace detected.";
+            const [status, staged, unstaged] = await Promise.all([
+                gitStatus(root),
+                getStagedDiff(root),
+                getUnstagedDiff(root)
+            ]);
+            return `# Git Context\n\n## Status\n\`\`\`\n${status}\n\`\`\`\n\n## Staged Changes\n\`\`\`\n${staged}\n\`\`\`\n\n## Unstaged Changes\n\`\`\`\n${unstaged}\n\`\`\``;
         }
     });
 
@@ -147,24 +95,6 @@ export function registerMarieTools(registry: ToolRegistry, automationService: Jo
             await deleteFile(p);
             await logGratitude(`Discarded '${p}'`);
             return `File '${p}' has been discarded. ${getLettingGoMessage()}`;
-        }
-    });
-
-    registry.register({
-        name: "get_git_context",
-        description: "Get the current git status and diffs (staged and unstaged) for the project.",
-        input_schema: { type: "object", properties: {} },
-        execute: async () => {
-            const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-            if (!root) return "No workspace detected.";
-
-            const [status, staged, unstaged] = await Promise.all([
-                gitStatus(root),
-                getStagedDiff(root),
-                getUnstagedDiff(root)
-            ]);
-
-            return `# Git Context\n\n## Status\n\`\`\`\n${status}\n\`\`\`\n\n## Staged Changes\n\`\`\`\n${staged}\n\`\`\`\n\n## Unstaged Changes\n\`\`\`\n${unstaged}\n\`\`\``;
         }
     });
 

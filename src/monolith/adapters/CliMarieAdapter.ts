@@ -1,12 +1,11 @@
-import { AnthropicProvider } from '../infrastructure/ai/providers/AnthropicProvider.js';
-import { OpenRouterProvider } from '../infrastructure/ai/providers/OpenRouterProvider.js';
-import { CerebrasProvider } from '../infrastructure/ai/providers/CerebrasProvider.js';
 import { MarieCallbacks, RunTelemetry } from '../domain/marie/MarieTypes.js';
 import { registerMarieToolsCLI } from '../cli/MarieToolDefinitionsCLI.js';
 import { Storage, SessionMetadata } from '../cli/storage.js';
 import { JoyServiceCLI } from '../cli/services/JoyServiceCLI.js';
 import { MarieRuntime } from '../runtime/MarieRuntime.js';
 import { MarieProviderType, RuntimeAutomationPort, RuntimeConfigPort, RuntimeSessionStorePort } from '../runtime/types.js';
+import { createDefaultProvider } from '../runtime/providerFactory.js';
+import { RuntimeAdapterBase } from '../runtime/RuntimeAdapterBase.js';
 
 class CliConfigPort implements RuntimeConfigPort {
     getAiProvider(): MarieProviderType {
@@ -56,12 +55,11 @@ class CliSessionStorePort implements RuntimeSessionStorePort {
     }
 }
 
-export class MarieCLI {
-    private readonly runtime: MarieRuntime<RuntimeAutomationPort>;
+export class MarieCLI extends RuntimeAdapterBase<RuntimeAutomationPort> {
     private readonly joyService: JoyServiceCLI;
 
     constructor(workingDir: string = process.cwd()) {
-        this.joyService = new JoyServiceCLI();
+        const joyService = new JoyServiceCLI();
         const automationService: RuntimeAutomationPort = {
             setCurrentRun: (_run: RunTelemetry | undefined) => {
                 // CLI automation hooks are intentionally minimal.
@@ -71,43 +69,26 @@ export class MarieCLI {
             }
         };
 
-        this.runtime = new MarieRuntime<RuntimeAutomationPort>({
+        const runtime = new MarieRuntime<RuntimeAutomationPort>({
             config: new CliConfigPort(),
             sessionStore: new CliSessionStorePort(),
             toolRegistrar: (registry, automation) => registerMarieToolsCLI(registry, automation, workingDir),
-            providerFactory: (providerType, apiKey) => {
-                if (providerType === 'openrouter') return new OpenRouterProvider(apiKey);
-                if (providerType === 'cerebras') return new CerebrasProvider(apiKey);
-                return new AnthropicProvider(apiKey);
-            },
+            providerFactory: createDefaultProvider,
             automationService,
-            onProgressEvent: (event) => this.joyService.emitRunProgress(event as any),
+            onProgressEvent: (event) => joyService.emitRunProgress(event as any),
             shouldBypassApprovals: () => {
                 const config = Storage.getConfig();
                 const autonomyMode = config.autonomyMode || (config.requireApproval === false ? 'high' : 'balanced');
                 return autonomyMode === 'yolo';
             }
         });
+
+        super(runtime);
+        this.joyService = joyService;
     }
 
-    public async createSession() { return this.runtime.createSession(); }
-    public async listSessions(): Promise<SessionMetadata[]> { return this.runtime.listSessions(); }
-    public async loadSession(id: string): Promise<string> { return this.runtime.loadSession(id); }
-    public async deleteSession(id: string) { await this.runtime.deleteSession(id); }
-    public async renameSession(id: string, newTitle: string) { await this.runtime.renameSession(id, newTitle); }
-    public async togglePinSession(id: string) { await this.runtime.togglePinSession(id); }
-    public async handleMessage(text: string, callbacks?: MarieCallbacks): Promise<string> { return this.runtime.handleMessage(text, callbacks); }
-    public handleToolApproval(requestId: string, approved: boolean) { this.runtime.handleToolApproval(requestId, approved); }
-    public async clearCurrentSession() { await this.runtime.clearCurrentSession(); }
-    public stopGeneration() { this.runtime.stopGeneration(); }
-    public updateSettings() { this.runtime.updateSettings(); }
-    public async getModels() { return this.runtime.getModels(); }
-    public getMessages() { return this.runtime.getMessages(); }
-    public getCurrentSessionId(): string { return this.runtime.getCurrentSessionId(); }
-    public getCurrentRun(): RunTelemetry | undefined { return this.runtime.getCurrentRun(); }
-
     public dispose() {
-        this.runtime.dispose();
+        super.dispose();
         this.joyService.dispose();
     }
 }
